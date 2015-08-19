@@ -41,6 +41,7 @@
 
 #define CA_SYSTEM_ID_SIZE				10
 #define CONTENT_DESC_SIZE				10
+#define PRIVATE_DESC_SIZE               3
 
 //#define STARTTIME_LENGTH				5
 
@@ -82,7 +83,7 @@ struct ParentalRatingDesc
 	uint8_t age;
 };
 
-struct ContentDesc 
+struct ContentDesc
 {
 	int level_1;
 	int level_2;
@@ -99,6 +100,13 @@ struct ShortSmoothingBufferDesc
 	int sbLeakRate;
 };
 
+///ajoute par sfau
+struct PrivateDesc
+{
+   int tag;
+   int8_t token;
+};
+
 
 struct EitInfoSection {
 	//char startTime[STARTTIME_LENGTH+1];
@@ -111,6 +119,8 @@ struct EitInfoSection {
 	struct ContentDesc content_desc[CONTENT_DESC_SIZE];
 	struct CAIdentifierDesc ca_identifier_desc;
 	struct ShortSmoothingBufferDesc short_smoothing_Buffer_desc;
+	///ajoute par sfau
+	struct PrivateDesc private_desc[PRIVATE_DESC_SIZE];
 };
 
 struct EitInfo

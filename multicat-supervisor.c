@@ -1,9 +1,9 @@
 /*****************************************************************************
- * multicat-supervisor.c: 
+ * multicat-supervisor.c:
  *****************************************************************************
- * $Id: multicat-supervisor.c 
+ * $Id: multicat-supervisor.c
  *
- * Authors: 
+ * Authors:
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,10 +70,10 @@ static char * pathdir;
 static void usage(void)
 {
     msg_Raw( NULL, "Usage: multicat-supervisor [-L <log level> -F <log file>] -I <ini file>" );
-    msg_Raw( NULL, "    -I: configuration ini file" );	
-    msg_Raw( NULL, "    -L: log level" );	
-    msg_Raw( NULL, "    -F: log file" );	
-    msg_Raw( NULL, "    -h: help" );		
+    msg_Raw( NULL, "    -I: configuration ini file" );
+    msg_Raw( NULL, "    -L: log level" );
+    msg_Raw( NULL, "    -F: log file" );
+    msg_Raw( NULL, "    -h: help" );
     exit(EXIT_FAILURE);
 }
 
@@ -86,11 +86,11 @@ static void SigHandler( int i_signal )
 }
 
 /**
- *  @brief 
- *  @param[in] 
- *  @return 
- * 
- *  
+ *  @brief
+ *  @param[in]
+ *  @return
+ *
+ *
  */
 EitMysql * search_streaming(EitMysql * list,int size,int id) {
 	EitMysql * result = NULL;
@@ -101,17 +101,17 @@ EitMysql * search_streaming(EitMysql * list,int size,int id) {
 			break;
 		}
 	}
-	
+
 	return result;
 }
 
 
 /**
- *  @brief 
- *  @param[in] 
- *  @return 
- * 
- *  
+ *  @brief
+ *  @param[in]
+ *  @return
+ *
+ *
  */
 static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 {
@@ -132,7 +132,7 @@ static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 	}
 
 	if ( *ptr->section1 != '\0' ) {
-		
+
 		struct EitInfoSection * st_eitSection1 = json_parse(ptr->section1);
 		if ( st_eitSection1 != NULL ) {
 			memcpy(&eit_info->section1,st_eitSection1,sizeof(struct EitInfoSection));
@@ -148,19 +148,19 @@ static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 }
 
 /**
- *  @brief 
- *  @param[in] 
- *  @return 
- * 
- *  
+ *  @brief
+ *  @param[in]
+ *  @return
+ *
+ *
  */
 static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 {
 	int i=0;
 	int action=0;
-	
+
 	for(i=0;i<streamingListSize;i++) {
-	
+
 		EitMysql * ptr = search_streaming(bdList,bdListSize,streamingList[i].id);
 		if ( ptr == NULL ) {
 			// DELETE STREEAMING
@@ -189,11 +189,11 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 				}
 			}
 		}
-	
+
 	}
-	
+
 	for(i=0;i<bdListSize;i++) {
-	
+
 		EitMysql * ptr = search_streaming(streamingList,streamingListSize,bdList[i].id);
 		if ( ptr == NULL ) {
 			// NEW STREAMING
@@ -219,7 +219,7 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 			}
 		}
 	}
-	
+
 	if ( action == 0 ) {
 		eit_mysql_getList_free(bdList,bdListSize);
 		Logs(LOG_DEBUG,__FILE__,__LINE__,"NOTHING TO DO");
@@ -237,10 +237,10 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 
 static void dump_eit_mysql(EitMysql * st,int size)
 {
-	int i;	
-	
+	int i;
+
 	for(i=0;i<size;i++) {
-		
+
 		printf("--------------------------------------------------------------------------------\n");
 		printf("- ID			: %d\n",st[i].id);
 		printf("- LCN			: %d\n",st[i].lcn);
@@ -258,7 +258,7 @@ static void dump_eit_mysql(EitMysql * st,int size)
 		printf("- ONID			: %d\n",st[i].onid);
 		printf("- STATUS		: %s\n",st[i].status);
 		printf("--------------------------------------------------------------------------------\n");
-		
+
 	}
 
 
@@ -266,10 +266,10 @@ static void dump_eit_mysql(EitMysql * st,int size)
 
 static void stop_all_streaming()
 {
-	int i;	
-	
+	int i;
+
 	if ( streamingList == NULL ) return;
-	
+
 	for(i=0;i<streamingListSize;i++) {
 		Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREEAMING [%d,%d,%s,%s,%s,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
 		char cmd[512];
@@ -277,13 +277,13 @@ static void stop_all_streaming()
 		Logs(LOG_DEBUG,__FILE__,__LINE__,"cmd : %s",cmd);
 		int ret = system(cmd);
 		if ( ret != 0 ) {
-			eit_mysql_setStatus(streamingList[i].id,"STOP FAILURE");		
+			eit_mysql_setStatus(streamingList[i].id,"STOP FAILURE");
 			Logs(LOG_ERROR,__FILE__,__LINE__,"STOP STREEAMING [%d,%d,%s,%s,%s,%d] failed",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
 		} else {
 			eit_mysql_setStatus(streamingList[i].id,"STOPPED");
 		}
 	}
-	
+
 	eit_mysql_getList_free(streamingList,streamingListSize);
 	streamingList = NULL;
 	streamingListSize = 0;
@@ -293,7 +293,7 @@ static void stop_all_streaming()
 /*****************************************************************************
  * Entry point
  *****************************************************************************/
-int main( int i_argc, char **pp_argv )
+main( int i_argc, char **pp_argv )
 {
     int c;
     struct sigaction sa;
@@ -304,11 +304,11 @@ int main( int i_argc, char **pp_argv )
 	int hasIniFile=0;
 	int logLevel = LOG_CRITICAL;
 	char logfile[129];
-	
+
 	memset(logfile,'\0',129);
 
 	pathdir = dirname(pp_argv[0]);
-	
+
     /* Parse options */
     while ( (c = getopt( i_argc, pp_argv, "I:hL:F:" )) != -1 )
     {
@@ -326,29 +326,29 @@ int main( int i_argc, char **pp_argv )
     }
     if ( hasIniFile == 0 )
         usage();
-		
+
 	if ( ChargerFichierIni(iniFile) != INI_SUCCESS ) {
 		fprintf(stderr,"Load ini file failed");
-        exit(EXIT_FAILURE);	
+        exit(EXIT_FAILURE);
 	}
 
 	logLevel = stringToLogLevel(rechercherValeur("SUPERVISOR_LOGS","level"));
 	strncpy(logfile,rechercherValeur("SUPERVISOR_LOGS","file"),128);
-		
+
 	setLogFile(logLevel,logfile);
 
 	char * map_file = rechercherValeur("SHARED_MEMORY","file");
 	int streamingProvider = atoi(rechercherValeur("SHARED_MEMORY","streamingProvider"));
-	i_sleep = atoi(rechercherValeur("SUPERVISOR","sleep"));	
+	i_sleep = atoi(rechercherValeur("SUPERVISOR","sleep"));
 	infos.host = rechercherValeur("SUPERVISOR","host");
 	infos.username = rechercherValeur("SUPERVISOR","username");
 	infos.password = rechercherValeur("SUPERVISOR","password");
 	infos.database = rechercherValeur("SUPERVISOR","database");
 	infos.port = atoi(rechercherValeur("SUPERVISOR","port"));
-	
+
 	if ( sharedMemory_init(map_file,streamingProvider) != 0 ) {
 		Logs(LOG_CRITICAL,__FILE__,__LINE__,"Load shared memory mapping file failed" );
-		exit(EXIT_FAILURE);	
+		exit(EXIT_FAILURE);
 	}
 
 
@@ -365,7 +365,7 @@ int main( int i_argc, char **pp_argv )
 		Logs(LOG_CRITICAL,__FILE__,__LINE__,"Couldn't set signal handler: %s", strerror(errno) );
         exit(EXIT_FAILURE);
     }
-	
+
 	if ( eit_mysql_init(infos) != 0 ) {
 		char * error = eit_mysql_getLastError();
 		if ( error != NULL ) {
@@ -375,7 +375,7 @@ int main( int i_argc, char **pp_argv )
 		}
         exit(EXIT_FAILURE);
 	}
- 
+
     /* Main loop */
     while ( !b_die )
     {
