@@ -67,7 +67,7 @@ multicat_validate: $(OBJ_MULTICAT_VALIDATE)
 	$(CC) -o $@ $(OBJ_MULTICAT_VALIDATE) $(LDLIBS)
 
 clean:
-	-rm -f multicat-eit $(OBJ_MULTICAT) multicat-viewer $(OBJ_MULTICAT_VIEWER) multicat-supervisor $(OBJ_MULTICAT_SUPERVISOR) ingests $(OBJ_INGESTS) aggregartp $(OBJ_AGGREGARTP) reordertp $(OBJ_REORDERTP) offsets $(OBJ_OFFSETS) lasts $(OBJ_LASTS) multicat_validate
+	-rm -f multicat-eit $(OBJ_MULTICAT) multicat-viewer $(OBJ_MULTICAT_VIEWER) multicat-supervisor $(OBJ_MULTICAT_SUPERVISOR) ingests $(OBJ_INGESTS) aggregartp $(OBJ_AGGREGARTP) reordertp $(OBJ_REORDERTP) offsets $(OBJ_OFFSETS) lasts $(OBJ_LASTS) multicat_validate $(OBJ_MULTICAT_VALIDATE)
 
 install: all
 	@install -d $(BIN)

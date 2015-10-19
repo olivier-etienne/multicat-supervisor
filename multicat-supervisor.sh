@@ -11,11 +11,7 @@
 
 #set -e
 
-SCRIPTNAME="${0##*/}"
-SCRIPTNAME="${SCRIPTNAME##[KS][0-9][0-9]}"
-
-PATHSCRIPTBIN=`dirname $0`
-BASEDIR=${PATHSCRIPTBIN%/*}
+BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
 
 if [ ! -d $BASEDIR/var ]; then
 	mkdir -p $BASEDIR/var
@@ -25,44 +21,65 @@ if [ ! -d  $BASEDIR/logs ]; then
 	mkdir -p $BASEDIR/logs
 fi
 
+PID=""
 PIDFILE=$BASEDIR/var/multicat-supervisor.pid
 LOCKFILE=$BASEDIR/var/multicat-supervisor.lock
 
-pidof_multicat() {
-
-	PID=`ps -ef | grep multicat-supervisor | grep -v grep | grep -v sh | awk '{print $2}'`
+multicat_pid() {
+	PID=$(ps -ef | grep multicat-supervisor | grep -v grep | grep -v service | grep -v sh | awk '{print $2}')
 	if [ -z "$PID" ]; then
-		return 1
-	fi
-	
-	echo $PID > $PIDFILE
-	if [ $? -ne 0 ]; then
 		return 1
 	fi
 	return 0
 }
 
+write_multicat_pid() {
+	echo $PID > $PIDFILE
+}
+
+multicat_eit_pid() {
+	PID_EIT=$(ps -ef | grep multicat-eit | grep -v grep | grep -v service | grep -v sh | awk '{print $2}')
+	if [ -z "$PID_EIT" ]; then
+		return 1
+	fi
+	return 0
+}
+
+clean_pid_lock_multicat() {
+	rm $BASEDIR/var/*.lock $BASEDIR/var/*.pid > /dev/null 2>&1
+}
+
 start() {
 
-	if [ -e $LOCKFILE ]; then
-		echo "[ERROR] Program already started..."
+	multicat_pid
+	if [ $? -eq 0 ]; then
+		echo "[ERROR] multicat already started..."
 		return 1
 	fi
 	
 	killall -eq multicat-eit > /dev/null 2>&1
+	clean_pid_lock_multicat
 	sleep 2
 	
-	$BASEDIR/bin/multicat-supervisor -I $BASEDIR/conf/multicat.ini >> $BASEDIR/logs/multicat-supervisor.log 2>&1 &
+	nohup $BASEDIR/bin/multicat-supervisor -I $BASEDIR/conf/multicat.ini >> $BASEDIR/logs/multicat-supervisor.log 2>&1 &
 	if [ $? -ne 0 ]; then
-		echo "[ERROR] launch failure"
+		echo "[ERROR] multicat launch failure"
 		return 1
 	fi
 	
-	sleep 5
-	
-	pidof_multicat
+	sleep 5	
+
+	multicat_pid
 	if [ $? -ne 0 ]; then
-		echo "[ERROR] pid not found"	
+		echo "[ERROR] pid of multicat-supervisor not found"	
+		return 1
+	fi
+
+	write_multicat_pid
+
+	multicat_eit_pid
+	if [ $? -ne 0 ]; then
+		echo "[ERROR] pid of multicat-eit not found"	
 		return 1
 	fi
 	
@@ -74,24 +91,21 @@ start() {
 
 stop() {
 
-	if [ ! -e $LOCKFILE ]; then
-		echo "[ERROR] Program not started..."
-		return 1
-	fi
-
-	if [ ! -e $PIDFILE ]; then
-		echo "[ERROR] missing pid file..."
+	multicat_pid
+	if [ $? -ne 0 ]; then
+		echo "[ERROR] multicat not running..."	
 		return 1
 	fi
 	
-	PID=`cat $PIDFILE`
+	PID=$(cat $PIDFILE)
 	kill -TERM $PID
 	if [ $? -ne 0 ]; then
-		echo "[ERROR] kill programm failed"
+		echo "[ERROR] kill multicat failed"
 		return 1
 	fi
 
-	rm -f $PIDFILE $LOCKFILE 
+	killall -eq multicat-eit > /dev/null 2>&1
+	clean_pid_lock_multicat
 	echo "	SUCCESS"
 }
 
@@ -114,23 +128,20 @@ case $1 in
 	;;
 	status)
 		echo -n "[STATUS]	"
-		if [ ! -e $LOCKFILE ]; then
-			echo "Program not started..."
-			exit 1
-		fi
-
-		if [ ! -e $PIDFILE ]; then
-			echo "Program not started..."
-			exit 1
+		multicat_pid
+		if [ $? -ne 0 ]; then
+			echo "multicat not running..."	
+			return 1
 		fi
 	
-		PID=`cat $PIDFILE`
-		echo "Program started PID[$PID] ..."
+		PID=$(cat $PIDFILE)
+		echo "multicat running PID[$PID] ..."
 	;;
 	*)
-		echo "Usage: /etc/init.d/multicat-supervisor.sh {start|stop|restart|status}"
+		echo "Usage: /usr/local/multicat-tools/multicat-supervisor.sh {start|stop|restart|status}"
 		exit 1
 	;;
 esac
 
 exit 0
+
