@@ -1,9 +1,9 @@
 /*****************************************************************************
- * json_parsing.c:
+ * json_parsing.c: 
  *****************************************************************************
- * $Id: json_parsing.c
+ * $Id: json_parsing.c 
  *
- * Authors:
+ * Authors: 
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,13 +64,13 @@ static int json_parse_parental_rating_descriptor(json_object * jobj,struct EitIn
  *****************************************************************************/
 
 /**
- *  @brief
- *  @param[in]
- *  @return
- *
+ *  @brief 
+ *  @param[in] 
+ *  @return 
+ * 
  *  printing the value corresponding to boolean, double, integer and strings
  */
-
+ 
 //static void print_json_value(json_object *jobj){
 //  enum json_type type;
 //
@@ -95,16 +95,16 @@ static int json_parse_parental_rating_descriptor(json_object * jobj,struct EitIn
 //}
 
 /**
- *  @brief
- *  @param[in]
- *  @return
- *
+ *  @brief 
+ *  @param[in] 
+ *  @return 
+ * 
  */
 // static void json_parse_array( json_object *jobj, char *key) {
 //  enum json_type type;
 //
 //  json_object *jarray = jobj; /*Simply get the array*/
-//  if(key) {
+//  if(key) { 
 //	json_object_object_get_ex(jobj, key,&jarray);
 //	//jarray = json_object_object_get(jobj, key); /*Getting the array if it is a key value pair*/
 //  }
@@ -131,11 +131,11 @@ static int json_parse_parental_rating_descriptor(json_object * jobj,struct EitIn
 //}
 
 /**
- *  @brief
- *  @param[in]
- *  @return
+ *  @brief 
+ *  @param[in] 
+ *  @return 
  *
- * Parsing the json object
+ * Parsing the json object 
  */
 static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSection * eitStrInfo)
 {
@@ -144,7 +144,7 @@ static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSe
   int i;
   json_object * jvalue;
 
-  for (i=0; i< arraylen && i < COMPONENTDESC_SIZE; i++)
+  for (i=0; i< arraylen && i < COMPONENTDESC_SIZE; i++) 
   {
     jvalue = json_object_array_get_idx(jarray, i); /*Getting the array element at position i*/
     type = json_object_get_type(jvalue);
@@ -153,7 +153,7 @@ static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSe
 		return -1;
     }
 
-	json_object_object_foreach(jvalue, key, val) {
+	json_object_object_foreach(jvalue, key, val) { 
 		type = json_object_get_type(val);
 
 		if ( strcmp(key,"stream_content") == 0 ) {
@@ -202,7 +202,7 @@ static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSe
 				return -1;
 			}
 			strncpy(eitStrInfo->component_desc[i].lang,json_object_get_string(val),COMPONENTDESC_LANG_LENGTH);
-		}
+		}		
 	}
   }
   return 0;
@@ -210,11 +210,11 @@ static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSe
 }
 
 /**
- *  @brief
- *  @param[in]
- *  @return
+ *  @brief 
+ *  @param[in] 
+ *  @return 
  *
- * Parsing the json object
+ * Parsing the json object 
  */
 static int json_parse_content_descriptor(json_object * jarray,struct EitInfoSection * eitStrInfo)
 {
@@ -223,7 +223,7 @@ static int json_parse_content_descriptor(json_object * jarray,struct EitInfoSect
   int i;
   json_object * jvalue;
 
-  for (i=0; i< arraylen && i < CONTENT_DESC_SIZE; i++)
+  for (i=0; i< arraylen && i < CONTENT_DESC_SIZE; i++) 
   {
     jvalue = json_object_array_get_idx(jarray, i); /*Getting the array element at position i*/
     type = json_object_get_type(jvalue);
@@ -232,7 +232,7 @@ static int json_parse_content_descriptor(json_object * jarray,struct EitInfoSect
 		return -1;
     }
 
-	json_object_object_foreach(jvalue, key, val) {
+	json_object_object_foreach(jvalue, key, val) { 
 		type = json_object_get_type(val);
 
 		if ( strcmp(key,"content_nibble_level_1") == 0 ) {
@@ -274,7 +274,7 @@ static int json_parse_content_descriptor(json_object * jarray,struct EitInfoSect
 					return -1;
 			}
 		}
-
+		
 	}
   }
   return 0;
@@ -283,11 +283,11 @@ static int json_parse_content_descriptor(json_object * jarray,struct EitInfoSect
 
 
 /**
- *  @brief
- *  @param[in]
- *  @return
+ *  @brief 
+ *  @param[in] 
+ *  @return 
  *
- * Parsing the json object
+ * Parsing the json object 
  */
 static int json_parse_ca_identifier_descriptor(json_object * jarray,struct EitInfoSection * eitStrInfo)
 {
@@ -296,7 +296,7 @@ static int json_parse_ca_identifier_descriptor(json_object * jarray,struct EitIn
   int i;
   json_object * jvalue;
 
-  for (i=0; i< arraylen && i < CA_SYSTEM_ID_SIZE; i++)
+  for (i=0; i< arraylen && i < CA_SYSTEM_ID_SIZE; i++) 
   {
     jvalue = json_object_array_get_idx(jarray, i); /*Getting the array element at position i*/
     type = json_object_get_type(jvalue);
@@ -317,11 +317,11 @@ static int json_parse_ca_identifier_descriptor(json_object * jarray,struct EitIn
 }
 
 /**
- *  @brief
- *  @param[in]
- *  @return
+ *  @brief 
+ *  @param[in] 
+ *  @return 
  *
- * Parsing the json object
+ * Parsing the json object 
  */
 static int json_parse_short_event_descriptor_items(json_object * jarray,struct EitInfoSection * eitStrInfo)
 {
@@ -330,7 +330,7 @@ static int json_parse_short_event_descriptor_items(json_object * jarray,struct E
   int i;
   json_object * jvalue;
 
-  for (i=0; i< arraylen && i < EXTEVENTDESC_ITEM_SIZE; i++)
+  for (i=0; i< arraylen && i < EXTEVENTDESC_ITEM_SIZE; i++) 
   {
     jvalue = json_object_array_get_idx(jarray, i); /*Getting the array element at position i*/
     type = json_object_get_type(jvalue);
@@ -339,14 +339,14 @@ static int json_parse_short_event_descriptor_items(json_object * jarray,struct E
 		return -1;
     }
 
-	json_object_object_foreach(jvalue, key, val) {
+	json_object_object_foreach(jvalue, key, val) { 
 		type = json_object_get_type(val);
 
 		if ( strcmp(key,"text") == 0 ) {
 			if ( type != json_type_string ) {
 				Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, String expected\n",key);
 				return -1;
-			}
+			}	
 			strncpy(eitStrInfo->ext_event_desc.items[i].text,json_object_get_string(val),TEXTANDDESC_TEXT_LENGTH);
 		}
 		else if ( strcmp(key,"desc") == 0 ) {
@@ -362,74 +362,11 @@ static int json_parse_short_event_descriptor_items(json_object * jarray,struct E
 
 }
 /**
- * Ajoute par sfau
- *  @brief
- *  @param[in]
- *  @return
+ *  @brief 
+ *  @param[in] 
+ *  @return 
  *
- * Parsing the json object: tableau de {"tag":"0xAA", "token":"77"}
- */
-
-static int json_parse_private_descriptor(json_object * jarray, struct EitInfoSection * eitStrInfo) {
-
-   enum json_type type;
-	int arraylen = json_object_array_length(jarray); /*Getting the length of the array*/
-  int i;
-  json_object * jvalue;
-
-    // Pour chaque PrivateToken
-	 for (i=0; i< arraylen && i < PRIVATE_DESC_SIZE; i++)
-  {
-    jvalue = json_object_array_get_idx(jarray, i); /*Getting the array element at position i*/
-    type = json_object_get_type(jvalue);
-    if (type != json_type_object) {
-		Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (component_descriptor item[%d]) bad type, Object expected\n",i);
-		return -1;
-    }
-
-    json_object_object_foreach(jvalue, key, val) {
-		type = json_object_get_type(val);
-
-		if ( strcmp(key,"tag") == 0 ) {
-			switch(type) {
-				case json_type_string :
-					sscanf(json_object_get_string(val),"%x",&eitStrInfo->private_desc[i].tag);
-					break;
-				case json_type_int :
-					eitStrInfo->private_desc[i].tag = json_object_get_int(val);
-					break;
-				default :
-					Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, String or integer expected\n",key);
-					return -1;
-			}
-		} else if ( strcmp(key,"token") == 0 ) {
-            switch(type) {
-				case json_type_string :
-					sscanf(json_object_get_string(val),"%x",&eitStrInfo->private_desc[i].token);
-					break;
-				case json_type_int :
-					eitStrInfo->private_desc[i].token = json_object_get_int(val);
-					break;
-				default :
-					Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, String or integer expected\n",key);
-					return -1;
-			}
-		}
-
-    }
-
-
-   }
-
-    //TODO
-    return 0;
-}
-/**
- *  @brief
- *  @param[in]
- *  @return
- *
- * Parsing the json object
+ * Parsing the json object 
  */
 static int json_parse_short_event_descriptor(json_object * jobj,struct EitInfoSection * eitStrInfo)
 {
@@ -437,15 +374,15 @@ static int json_parse_short_event_descriptor(json_object * jobj,struct EitInfoSe
 	if ( jobj == NULL ) {
 		return -1;
 	}
-
-	json_object_object_foreach(jobj, key, val) {
+  
+	json_object_object_foreach(jobj, key, val) { 
 		type = json_object_get_type(val);
 
 		if ( strcmp(key,"event_name") == 0 ) {
 			if ( type != json_type_string ) {
 				Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, String expected\n",key);
 				return -1;
-			}
+			}	
 			strncpy(eitStrInfo->short_event_desc.event_name,json_object_get_string(val),SHORTEVENTDESC_NAME_LENGTH);
 		}
 		else if ( strcmp(key,"event_text") == 0 ) {
@@ -468,11 +405,11 @@ static int json_parse_short_event_descriptor(json_object * jobj,struct EitInfoSe
 
 
 /**
- *  @brief
- *  @param[in]
- *  @return
+ *  @brief 
+ *  @param[in] 
+ *  @return 
  *
- * Parsing the json object
+ * Parsing the json object 
  */
 static int json_parse_extended_event_descriptor(json_object * jobj,struct EitInfoSection * eitStrInfo)
 {
@@ -480,15 +417,15 @@ static int json_parse_extended_event_descriptor(json_object * jobj,struct EitInf
 	if ( jobj == NULL ) {
 		return -1;
 	}
-
-	json_object_object_foreach(jobj, key, val) {
+  
+	json_object_object_foreach(jobj, key, val) { 
 		type = json_object_get_type(val);
 
 		if ( strcmp(key,"text") == 0 ) {
 			if ( type != json_type_string ) {
 				Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, String expected\n",key);
 				return -1;
-			}
+			}	
 			strncpy(eitStrInfo->ext_event_desc.text,json_object_get_string(val),EXTEVENTDESC_TEXT_LENGTH);
 		}
 		else if ( strcmp(key,"lang") == 0 ) {
@@ -512,11 +449,11 @@ static int json_parse_extended_event_descriptor(json_object * jobj,struct EitInf
 }
 
 /**
- *  @brief
- *  @param[in]
- *  @return
+ *  @brief 
+ *  @param[in] 
+ *  @return 
  *
- * Parsing the json object
+ * Parsing the json object 
  */
 static int json_parse_parental_rating_descriptor(json_object * jobj,struct EitInfoSection * eitStrInfo)
 {
@@ -524,15 +461,15 @@ static int json_parse_parental_rating_descriptor(json_object * jobj,struct EitIn
 	if ( jobj == NULL ) {
 		return -1;
 	}
-
-	json_object_object_foreach(jobj, key, val) {
+  
+	json_object_object_foreach(jobj, key, val) { 
 		type = json_object_get_type(val);
 
 		if ( strcmp(key,"country_code") == 0 ) {
 			if ( type != json_type_string ) {
 				Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, String expected\n",key);
 				return -1;
-			}
+			}	
 			strncpy(eitStrInfo->parent_rating_desc.country_code,json_object_get_string(val),PARENTALRATINGDESC_COUNTRY_CODE_LENGTH);
 		}
 		else if ( strcmp(key,"age") == 0 ) {
@@ -564,8 +501,8 @@ static int json_parse_short_smoothing_buffer_descriptor(json_object * jobj,struc
 	if ( jobj == NULL ) {
 		return -1;
 	}
-
-	json_object_object_foreach(jobj, key, val) {
+  
+	json_object_object_foreach(jobj, key, val) { 
 		type = json_object_get_type(val);
 
 		if ( strcmp(key,"sb_leak_rate") == 0 ) {
@@ -573,12 +510,12 @@ static int json_parse_short_smoothing_buffer_descriptor(json_object * jobj,struc
 				Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, String expected\n",key);
 				return -1;
 			}
-
+			
 			if ( isNumber((char*)json_object_get_string(val)) == 0 ) {
 				Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, String expected but it must an integer\n",key);
 				return -1;
 			}
-
+			
 			eitStrInfo->short_smoothing_Buffer_desc.sbLeakRate = atoi(json_object_get_string(val));
 		}
 	}
@@ -586,11 +523,11 @@ static int json_parse_short_smoothing_buffer_descriptor(json_object * jobj,struc
 }
 
 /**
- *  @brief
- *  @param[in]
- *  @return
+ *  @brief 
+ *  @param[in] 
+ *  @return 
  *
- * Parsing the json object
+ * Parsing the json object 
  */
 struct EitInfoSection* json_parse(char * str) {
 	enum json_type type;
@@ -600,10 +537,10 @@ struct EitInfoSection* json_parse(char * str) {
 		Logs(LOG_ERROR,__FILE__,__LINE__,"not enough memory - allocation EitInfoSection failed");
 		return NULL;
 	}
-
+  
 	memset(eitStrInfo,0,sizeof(struct EitInfoSection));
-
-	json_object * jobj = json_tokener_parse(str);
+  
+	json_object * jobj = json_tokener_parse(str);     
 	if ( jobj == NULL ) {
 		free(eitStrInfo);
 		Logs(LOG_ERROR,__FILE__,__LINE__,"Parse JSON String failed");
@@ -615,7 +552,7 @@ struct EitInfoSection* json_parse(char * str) {
 		Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (main) bad type, Object expected\n");
 		return NULL;
 	}
-
+  
 	json_object_object_foreach(jobj, key, val) { /*Passing through every array element*/
 	json_object * child;
 	type = json_object_get_type(val);
@@ -628,18 +565,6 @@ struct EitInfoSection* json_parse(char * str) {
 			return NULL;
 		}
 		if ( json_parse_short_event_descriptor(child,eitStrInfo) != 0 ) {
-			free(eitStrInfo);
-			return NULL;
-		}
-	}
-	// ajoute par sfau
-	else if ( strcmp(key,"PRIVATE_DESCRIPTOR") == 0 ) {
-		if ( type != json_type_object ) {
-			Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, Object expected\n",key);
-			free(eitStrInfo);
-			return NULL;
-		}
-		if ( json_parse_private_descriptor(child,eitStrInfo) != 0 ) {
 			free(eitStrInfo);
 			return NULL;
 		}
@@ -687,7 +612,7 @@ struct EitInfoSection* json_parse(char * str) {
 		if ( json_parse_content_descriptor(child,eitStrInfo) != 0 ) {
 			free(eitStrInfo);
 			return NULL;
-		}
+		}	
 	}
 	else if ( strcmp(key,"CA_IDENTIFIER_DESCRIPTOR") == 0 ) {
 		if ( type != json_type_array ) {
@@ -698,18 +623,18 @@ struct EitInfoSection* json_parse(char * str) {
 		if ( json_parse_ca_identifier_descriptor(child,eitStrInfo) != 0 ) {
 			free(eitStrInfo);
 			return NULL;
-		}
+		}	
 	}
 	else if ( strcmp(key,"SHORT_SMOOTHING_BUFFER_DESCRIPTOR") == 0 ) {
 		if ( type != json_type_object ) {
 			Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, Object expected\n",key);
 			free(eitStrInfo);
 			return NULL;
-		}
+		}	
 		if ( json_parse_short_smoothing_buffer_descriptor(child,eitStrInfo) != 0 ) {
 			free(eitStrInfo);
 			return NULL;
-		}
+		}	
 	}
 
 	else if ( strcmp(key,"starttime") == 0 ) {
@@ -717,7 +642,7 @@ struct EitInfoSection* json_parse(char * str) {
 			Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, Object expected\n",key);
 			free(eitStrInfo);
 			return NULL;
-		}
+		}	
 		eitStrInfo->starttime = json_object_get_int64(val);
 	}
 	else if ( strcmp(key,"duration") == 0 ) {
@@ -726,19 +651,19 @@ struct EitInfoSection* json_parse(char * str) {
 			free(eitStrInfo);
 			return NULL;
 		}
-		eitStrInfo->duration = json_object_get_int(val);
+		eitStrInfo->duration = json_object_get_int(val);		
 	}
 
-
+	
     /*switch (type) {
-      case json_type_boolean:
-      case json_type_double:
-      case json_type_int:
+      case json_type_boolean: 
+      case json_type_double: 
+      case json_type_int: 
       case json_type_string: print_json_value(val);
-                           break;
+                           break; 
       case json_type_object: printf("json_type_object\n");
 							json_object_object_get_ex(jobj, key,&child);
-                           json_parse(child);
+                           json_parse(child); 
                            break;
       case json_type_array: printf("type: json_type_array, ");
                           json_parse_array(jobj, key);
@@ -747,5 +672,5 @@ struct EitInfoSection* json_parse(char * str) {
     }*/
   }
 	return eitStrInfo;
-}
+} 
 

@@ -1,6 +1,5 @@
 # multicat Makefile
 JSON_C_DIR=/usr/local
-BITSTREAM_C_DIR=/usr/local
 
 VERSION = 2.0
 CFLAGS += -Wall -Wformat-security -O3 -fomit-frame-pointer -D_FILE_OFFSET_BITS=64 -D_ISOC99_SOURCE -D_BSD_SOURCE
@@ -9,9 +8,8 @@ CFLAGS += -g
 LDLIBS += -lrt -lpthread
 
 CFLAGS += -I$(JSON_C_DIR)/include/json-c
-CFLAGS += -I$(BITSTREAM_C_DIR)/include/bitstream
 LDFLAGS_SUPERVISOR = $(LDLIBS) -L$(JSON_C_DIR)/lib -ljson-c -lmysqlclient -lz
-LDFLAGS_VIEWER = $(LDLIBS)
+LDFLAGS_VIEWER = $(LDLIBS) 
 
 OBJ_MULTICAT = multicat.o util.o eit.o lib_ini.o sharedMemoryLib.o logs.o
 OBJ_MULTICAT_VIEWER = multicat-viewer.o util.o lib_ini.o sharedMemoryLib.o logs.o
@@ -20,7 +18,7 @@ OBJ_INGESTS = ingests.o util.o lib_ini.o logs.o
 OBJ_AGGREGARTP = aggregartp.o util.o lib_ini.o logs.o
 OBJ_REORDERTP = reordertp.o util.o lib_ini.o logs.o
 OBJ_OFFSETS = offsets.o util.o lib_ini.o logs.o
-OBJ_LASTS = lasts.o
+OBJ_LASTS = lasts.o 
 OBJ_MULTICAT_VALIDATE = multicat_validate.o util.o lib_ini.o logs.o
 
 PREFIX ?= /usr/local/multicat-tools
@@ -76,7 +74,7 @@ install: all
 	@install -d $(MAN)
 	@install -d $(CONF)
 	@install -d $(SHPATH)
-
+	
 	@install multicat-eit multicat-supervisor multicat-viewer ingests aggregartp reordertp offsets lasts multicat_validate $(BIN)
 	@install multicat.1 ingests.1 aggregartp.1 reordertp.1 offsets.1 lasts.1 $(MAN)
 	@install multicat.ini multicat_viewer.ini $(CONF)
