@@ -33,19 +33,8 @@ multicat_pid() {
 	return 0
 }
 
-write_multicat_pid() {
-	echo $PID > $PIDFILE
-}
-
-multicat_eit_pid() {
-	PID_EIT=$(ps -ef | grep multicat-eit | grep -v grep | grep -v service | grep -v sh | awk '{print $2}')
-	if [ -z "$PID_EIT" ]; then
-		return 1
-	fi
-	return 0
-}
-
-clean_pid_lock_multicat() {
+clean_multicat() {
+	killall -eq multicat-eit > /dev/null 2>&1
 	rm $BASEDIR/var/*.lock $BASEDIR/var/*.pid > /dev/null 2>&1
 }
 
@@ -55,10 +44,9 @@ start() {
 	if [ $? -eq 0 ]; then
 		echo "[ERROR] multicat already started..."
 		return 1
-	fi
+	fi	
 	
-	killall -eq multicat-eit > /dev/null 2>&1
-	clean_pid_lock_multicat
+	clean_multicat
 	sleep 2
 	
 	nohup $BASEDIR/bin/multicat-supervisor -I $BASEDIR/conf/multicat.ini >> $BASEDIR/logs/multicat-supervisor.log 2>&1 &
@@ -75,15 +63,9 @@ start() {
 		return 1
 	fi
 
-	write_multicat_pid
-
-	multicat_eit_pid
-	if [ $? -ne 0 ]; then
-		echo "[ERROR] pid of multicat-eit not found"	
-		return 1
-	fi
-	
+	echo $PID > $PIDFILE
 	touch $LOCKFILE
+
 	echo "  SUCCESS"
 
 	return 0
@@ -104,11 +86,9 @@ stop() {
 		return 1
 	fi
 
-	killall -eq multicat-eit > /dev/null 2>&1
-	clean_pid_lock_multicat
+	clean_multicat
 	echo "	SUCCESS"
 }
-
 
 case $1 in
 	start)
@@ -144,4 +124,3 @@ case $1 in
 esac
 
 exit 0
-
