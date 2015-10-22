@@ -129,7 +129,7 @@ int eit_mysql_getList(EitMysql **list,int * size)
 		return -1;
 	}
    
-	if (mysql_query(conn, "SELECT ideit, lcn, description, user1, section_0, section_1,`enable`, eit_ts,`videofile`,`address`,`port`,`tsid`,`sid`,`onid`,`status` FROM eit WHERE enable=1")) {
+	if (mysql_query(conn, "SELECT eit.ideit, eit.lcn, eit.description, eit.user1, eit.section_0, eit.section_1, eit.enable, eit.eit_ts, video.filename, eit.address, eit.port, eit.tsid, eit.sid, eit.onid, eit.status FROM eit INNER JOIN video ON eit.videoid=video.idvideo WHERE eit.enable=1")) {
 		error = (char*)mysql_error(conn);
 		return -2;
 	}
