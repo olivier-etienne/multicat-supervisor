@@ -105,6 +105,7 @@ EitMysql * eit_mysql_cpyList(EitMysql *list,int size)
 		cpy[i].section0 = strcpyWithNull(list[i].section0);
 		cpy[i].section1 = strcpyWithNull(list[i].section1);
 		cpy[i].enable = list[i].enable;
+		cpy[i].to_inject = list[i].to_inject;
 		cpy[i].timestamp = list[i].timestamp;
 		strcpy(cpy[i].video,list[i].video);
 		strcpy(cpy[i].address,list[i].address);
@@ -129,7 +130,7 @@ int eit_mysql_getList(EitMysql **list,int * size)
 		return -1;
 	}
    
-	if (mysql_query(conn, "SELECT eit.ideit, eit.lcn, eit.description, eit.user1, eit.section_0, eit.section_1, eit.enable, eit.eit_ts, video.filename, eit.address, eit.port, eit.tsid, eit.sid, eit.onid, eit.status FROM eit INNER JOIN video ON eit.videoid=video.idvideo WHERE eit.enable=1")) {
+	if (mysql_query(conn, "SELECT eit.ideit, eit.lcn, eit.description, eit.user1, eit.section_0, eit.section_1, eit.enable, eit.to_inject, eit.eit_ts, video.filename, eit.address, eit.port, eit.tsid, eit.sid, eit.onid, eit.status FROM eit INNER JOIN video ON eit.videoid=video.idvideo WHERE eit.enable=1")) {
 		error = (char*)mysql_error(conn);
 		return -2;
 	}
@@ -151,6 +152,7 @@ int eit_mysql_getList(EitMysql **list,int * size)
 			(*list)[index].section0 = strcpyWithNull(row[rowIndex++]);
 			(*list)[index].section1 = strcpyWithNull(row[rowIndex++]);
 			(*list)[index].enable = (short)atoiWithNull(row[rowIndex++]);
+			(*list)[index].to_inject = (short)atoiWithNull(row[rowIndex++]);
 			(*list)[index].timestamp = atolWithNull(row[rowIndex++]);
 			strncpy((*list)[index].video,row[rowIndex++],EIT_MYSQL_VIDEOFILE_LENGTH);
 			strncpy((*list)[index].address,row[rowIndex++],EIT_MYSQL_ADDRESS_LENGTH);

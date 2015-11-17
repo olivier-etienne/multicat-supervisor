@@ -36,6 +36,7 @@ typedef struct EitMysql
 	char * section0;
 	char * section1;
 	short enable;
+	short to_inject;
 	long timestamp;
 	char video[EIT_MYSQL_VIDEOFILE_LENGTH+1];
 	char address[EIT_MYSQL_ADDRESS_LENGTH+1];

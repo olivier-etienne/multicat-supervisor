@@ -336,7 +336,7 @@ static void generate_eit(uint8_t ** output_eit,size_t* ouput_length)
 		}
 		
 		if ( infoSection->duration != 0 ) {
-			duration = infoSection->duration*60;
+			duration = infoSection->duration;
 		}
 		else {
 			duration = 3600*12;
@@ -382,11 +382,11 @@ static void generate_eit(uint8_t ** output_eit,size_t* ouput_length)
 	if (section == 0) {
 		eitn_set_event_id(eit_n, event_id);
 		eitn_set_running(eit_n, 4);
-	    eitn_set_ca(eit_n, false);
+	    eitn_set_ca(eit_n);
 	} else {
 		eitn_set_event_id(eit_n, event_id+1);
 		eitn_set_running(eit_n, 1);
-        eitn_set_ca(eit_n, false);
+        eitn_set_ca(eit_n);
 	}
 	
 	eitn_set_start_time(eit_n, dvb_time_encode_UTC(starttime));

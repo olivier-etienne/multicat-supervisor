@@ -32,6 +32,6 @@
  *
  * Parsing the json object 
  */
-struct EitInfoSection* json_parse(char* str);
+struct EitInfoSection* json_parse(json_object * jobj);
 
 #endif // JSON_PARSING_H_INCLUDED

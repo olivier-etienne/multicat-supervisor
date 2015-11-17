@@ -529,7 +529,7 @@ static int json_parse_short_smoothing_buffer_descriptor(json_object * jobj,struc
  *
  * Parsing the json object 
  */
-struct EitInfoSection* json_parse(char * str) {
+struct EitInfoSection* json_parse(json_object * jobj) {
 	enum json_type type;
 	struct EitInfoSection * eitStrInfo = (struct EitInfoSection *) malloc(sizeof(struct EitInfoSection));
 
@@ -540,7 +540,6 @@ struct EitInfoSection* json_parse(char * str) {
   
 	memset(eitStrInfo,0,sizeof(struct EitInfoSection));
   
-	json_object * jobj = json_tokener_parse(str);     
 	if ( jobj == NULL ) {
 		free(eitStrInfo);
 		Logs(LOG_ERROR,__FILE__,__LINE__,"Parse JSON String failed");
@@ -638,7 +637,7 @@ struct EitInfoSection* json_parse(char * str) {
 	}
 
 	else if ( strcmp(key,"starttime") == 0 ) {
-		if ( type != json_type_object ) {
+		if ( type != json_type_int ) {
 			Logs(LOG_ERROR,__FILE__,__LINE__,"[JSON Parsing Error] - (Key,%s) bad type, Object expected\n",key);
 			free(eitStrInfo);
 			return NULL;

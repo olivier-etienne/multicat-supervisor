@@ -45,6 +45,7 @@
 #include "lib_ini.h"
 #include "sharedMemoryLib.h"
 #include "eit_mysql.h"
+#include "eit_xml.h"
 #include "json_parsing.h"
 #include "logs.h"
 
@@ -115,32 +116,71 @@ EitMysql * search_streaming(EitMysql * list,int size,int id) {
  */
 static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 {
+	char videoPath[512];
+	eitXml_t *eitXml = NULL; 
+	eitInfoXml_t *eitInfoXml = NULL;
+
 	eit_info->tsid = ptr->tsid;
 	eit_info->sid = ptr->sid;
 	eit_info->onid = ptr->onid;
 
-	if ( *ptr->section0 == '\0' ) {
+	if (ptr->to_inject == 0) {
+		// Init EIT XML
+		if (NULL == (eitXml = init_eit_xml()))
+			return -3;
+
+		// load eit xml from ts file
+		sprintf(videoPath, "/usr/local/multicat-tools/videos/%s", ptr->video);
+		if (0 != extract_eti_xml_from_ts(eitXml, videoPath))
+			return -3;
+
+		// Init Eit XML
+		if (NULL == (eitInfoXml = init_eit_info_xml()))
+			return -3;
+
+		// build eit from xml
+		if (0 != (convert_xml_to_eit_struct(eitXml, eitInfoXml)))
+			return -3;
+	}
+	
+	if ( *ptr->section0 != '\0' ) {
+		json_object * jObjSection0 = json_object_new_object();
+
+		jObjSection0 = (ptr->to_inject == 1) ? json_tokener_parse(ptr->section0) : convert_eit_struct_to_json(eitInfoXml->section0);
+		Logs(LOG_INFO,__FILE__,__LINE__,"json object of section0 is : %s",json_object_to_json_string(jObjSection0));
+
+		struct EitInfoSection * st_eitSection0 = json_parse(jObjSection0);
+		if ( st_eitSection0 != NULL ) {
+			memcpy(&eit_info->section0,st_eitSection0,sizeof(struct EitInfoSection));
+			free(st_eitSection0);
+		}
+		else {
+			return -2;
+		}
+	}
+	else {
 		Logs(LOG_ERROR,__FILE__,__LINE__,"Missing section 0 in database");
 		return -1;
 	}
-	struct EitInfoSection * st_eitSection0 = json_parse(ptr->section0);
-	if ( st_eitSection0 != NULL ) {
-		memcpy(&eit_info->section0,st_eitSection0,sizeof(struct EitInfoSection));
-		free(st_eitSection0);
-	}else {
-		return -2;
-	}
-
 	if ( *ptr->section1 != '\0' ) {
+		json_object * jObjSection1 = json_object_new_object();
 		
-		struct EitInfoSection * st_eitSection1 = json_parse(ptr->section1);
+		jObjSection1 = (ptr->to_inject == 1) ? json_tokener_parse(ptr->section1) : convert_eit_struct_to_json(eitInfoXml->section1);
+		Logs(LOG_INFO,__FILE__,__LINE__,"json object of section1 is : %s",json_object_to_json_string(jObjSection1));
+
+		struct EitInfoSection * st_eitSection1 = json_parse(jObjSection1);
 		if ( st_eitSection1 != NULL ) {
 			memcpy(&eit_info->section1,st_eitSection1,sizeof(struct EitInfoSection));
 			free(st_eitSection1);
 		}
 		else {
-			return -3;
+			return -2;
 		}
+	}
+
+	if (ptr->to_inject == 0) {
+		free_eit_info_xml(eitInfoXml);
+		free_eit_xml(eitXml);
 	}
 
 	//dump_eit_info(eit_info);
@@ -163,17 +203,18 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 	
 		EitMysql * ptr = search_streaming(bdList,bdListSize,streamingList[i].id);
 		if ( ptr == NULL ) {
-			// DELETE STREEAMING
-			Logs(LOG_INFO,__FILE__,__LINE__,"DELETE STREEAMING [%d,%d,%s,%s,%s,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+			// DELETE STREAMING
+			Logs(LOG_INFO,__FILE__,__LINE__,"DELETE STREAMING [%d,%d,%s,%s,%s,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
 			char cmd[512];
 			sprintf(cmd,"%s/../sh/multicat.sh --provider %d stop",pathdir,streamingList[i].id);
 			Logs(LOG_DEBUG,__FILE__,__LINE__,"cmd : %s",cmd);
 			int ret = system(cmd);
 			if ( ret != 0 ) {
 				eit_mysql_setStatus(streamingList[i].id,"STOP FAILURE");
-				Logs(LOG_ERROR,__FILE__,__LINE__,"STOP STREEAMING [%d,%d,%s,%s,%s,%d] failed",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
-			}else {
+				Logs(LOG_ERROR,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d] FAILED",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+			}else {				
 				eit_mysql_setStatus(streamingList[i].id,"STOPPED");
+				Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d] DONE",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
 			}
 			action=1;
 		} else {
@@ -182,10 +223,19 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 				Logs(LOG_DEBUG,__FILE__,__LINE__,"UDPATE EIT [%d,%d,%s]",ptr->id,ptr->lcn,ptr->description);
 				// UPDATE EIT
 				struct EitInfo eit_info;
-				if ( convertStringsToEitStruct( ptr,&eit_info) == 0 ) {
-					sharedMemory_set(ptr->id,&eit_info);
-				} else {
-					eit_mysql_setStatus(bdList[i].id,"PARSING FAILURE");
+				switch (convertStringsToEitStruct(ptr, &eit_info)) {
+					case 0:
+						sharedMemory_set(ptr->id,&eit_info);
+						break;
+					case -1:
+						eit_mysql_setStatus(bdList[i].id,"DATABASE FAILURE");
+						break;
+					case -2 :
+						eit_mysql_setStatus(bdList[i].id,"PARSING FAILURE");
+						break;
+					case -3 :
+						eit_mysql_setStatus(bdList[i].id,"EIT FAILURE");
+						break;						
 				}
 			}
 		}
@@ -199,23 +249,33 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 			// NEW STREAMING
 			Logs(LOG_INFO,__FILE__,__LINE__,"NEW STREAMING [%d,%d,%s,%s,%s,%d]",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port);
 			struct EitInfo eit_info;
-			if ( convertStringsToEitStruct( &bdList[i],&eit_info) == 0 ) {
-				sharedMemory_set(bdList[i].id,&eit_info);
-				if ( *bdList[i].video != '\0' && *bdList[i].address != '\0' ) {
-					char cmd[512];
-					sprintf(cmd,"%s/../sh/multicat.sh --provider %d --video %s --address %s --port %d start",pathdir,bdList[i].id,bdList[i].video,bdList[i].address,bdList[i].port);
-					Logs(LOG_DEBUG,__FILE__,__LINE__,"cmd : %s",cmd);
-					int ret = system(cmd);
-					if ( ret != 0 ) {
-						eit_mysql_setStatus(bdList[i].id,"START FAILURE");
-						Logs(LOG_ERROR,__FILE__,__LINE__,"START STREEAMING [%d,%d,%s,%s,%s,%d] failed",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port);
-					} else {
-						eit_mysql_setStatus(bdList[i].id,"STARTED");
+			switch (convertStringsToEitStruct(&bdList[i],&eit_info)) {
+				case 0:
+					sharedMemory_set(bdList[i].id,&eit_info);
+					if ( *bdList[i].video != '\0' && *bdList[i].address != '\0' ) {
+						char cmd[512];
+						sprintf(cmd,"%s/../sh/multicat.sh --provider %d --video %s --address %s --port %d start",pathdir,bdList[i].id,bdList[i].video,bdList[i].address,bdList[i].port);
+						Logs(LOG_DEBUG,__FILE__,__LINE__,"cmd : %s",cmd);
+						int ret = system(cmd);
+						if ( ret != 0 ) {
+							eit_mysql_setStatus(bdList[i].id,"START FAILURE");
+							Logs(LOG_ERROR,__FILE__,__LINE__,"START STREAMING [%d,%d,%s,%s,%s,%d] FAILED",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port);
+						} else {
+							Logs(LOG_INFO,__FILE__,__LINE__,"START STREAMING [%d,%d,%s,%s,%s,%d] DONE",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port);
+							eit_mysql_setStatus(bdList[i].id,"STARTED");
+						}
+						action=1;
 					}
-					action=1;
-				}
-			} else {
-				eit_mysql_setStatus(bdList[i].id,"PARSING FAILURE");
+					break;
+				case -1:
+					eit_mysql_setStatus(bdList[i].id,"DATABASE FAILURE");
+					break;
+				case -2 :
+					eit_mysql_setStatus(bdList[i].id,"PARSING FAILURE");
+					break;
+				case -3 :
+					eit_mysql_setStatus(bdList[i].id,"EIT FAILURE");
+					break;						
 			}
 		}
 	}
@@ -249,6 +309,7 @@ static void dump_eit_mysql(EitMysql * st,int size)
 		printf("- SECTION 0		: %s\n",st[i].section0);
 		printf("- SECTION 1		: %s\n",st[i].section1);
 		printf("- ENABLE		: %d\n",st[i].enable);
+		printf("- TO_INJECT		: %d\n",st[i].to_inject);
 		printf("- TIMESTAMP		: %ld\n",st[i].timestamp);
 		printf("- VIDEO			: %s\n",st[i].video);
 		printf("- ADDRESS		: %s\n",st[i].address);
@@ -271,16 +332,17 @@ static void stop_all_streaming()
 	if ( streamingList == NULL ) return;
 	
 	for(i=0;i<streamingListSize;i++) {
-		Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREEAMING [%d,%d,%s,%s,%s,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+		Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
 		char cmd[512];
 		sprintf(cmd,"%s/../sh/multicat.sh --provider %d stop",pathdir,streamingList[i].id);
 		Logs(LOG_DEBUG,__FILE__,__LINE__,"cmd : %s",cmd);
 		int ret = system(cmd);
 		if ( ret != 0 ) {
 			eit_mysql_setStatus(streamingList[i].id,"STOP FAILURE");		
-			Logs(LOG_ERROR,__FILE__,__LINE__,"STOP STREEAMING [%d,%d,%s,%s,%s,%d] failed",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+			Logs(LOG_ERROR,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d] FAILED",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
 		} else {
 			eit_mysql_setStatus(streamingList[i].id,"STOPPED");
+			Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d] DONE",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
 		}
 	}
 	
