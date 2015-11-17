@@ -33,10 +33,6 @@ multicat_pid() {
 	return 0
 }
 
-clean_multicat_supervisor() {
-	rm $PIDFILE $LOCKFILE > /dev/null 2>&1
-}
-
 start() {
 
 	multicat_pid
@@ -46,7 +42,7 @@ start() {
 	fi	
 	
 	killall -eq multicat-eit > /dev/null 2>&1
-	clean_multicat_supervisor
+	rm $BASEDIR/var/*.pid $BASEDIR/var/*.lock > /dev/null 2>&1
 	sleep 2
 	
 	nohup $BASEDIR/bin/multicat-supervisor -I $BASEDIR/conf/multicat.ini >> $BASEDIR/logs/multicat-supervisor.log 2>&1 &
@@ -86,7 +82,7 @@ stop() {
 		return 1
 	fi
 
-	clean_multicat_supervisor
+	rm $PIDFILE $LOCKFILE > /dev/null 2>&1
 	echo "	SUCCESS"
 }
 
