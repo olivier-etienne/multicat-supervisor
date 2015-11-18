@@ -339,7 +339,7 @@ static void generate_eit(uint8_t ** output_eit,size_t* ouput_length)
 			duration = infoSection->duration;
 		}
 		else {
-			duration = 3600*12;
+			duration = 6300; // 1h45
 		}
 		ts_0 = starttime;
 		duration_0 = duration;
@@ -349,7 +349,7 @@ static void generate_eit(uint8_t ** output_eit,size_t* ouput_length)
 			duration = infoSection->duration;
 		}
 		else {
-			duration = 3600*12;
+			duration = 6300; // 1h45
 		}
 		// la date du debut du prochain evenement c'est le courant + ca duree
 		starttime = ts_0 + duration_0;
