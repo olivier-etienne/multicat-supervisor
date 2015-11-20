@@ -147,7 +147,7 @@ static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 		json_object * jObjSection0 = json_object_new_object();
 
 		jObjSection0 = (ptr->to_inject == 1) ? json_tokener_parse(ptr->section0) : convert_eit_struct_to_json(eitInfoXml->section0);
-		Logs(LOG_INFO,__FILE__,__LINE__,"json object of section0 is : %s",json_object_to_json_string(jObjSection0));
+		Logs(LOG_INFO,__FILE__,__LINE__,"section 0 json object of %s is : \n%s", ptr->video, json_object_to_json_string(jObjSection0));
 
 		struct EitInfoSection * st_eitSection0 = json_parse(jObjSection0);
 		if ( st_eitSection0 != NULL ) {
@@ -166,7 +166,7 @@ static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 		json_object * jObjSection1 = json_object_new_object();
 		
 		jObjSection1 = (ptr->to_inject == 1) ? json_tokener_parse(ptr->section1) : convert_eit_struct_to_json(eitInfoXml->section1);
-		Logs(LOG_INFO,__FILE__,__LINE__,"json object of section1 is : %s",json_object_to_json_string(jObjSection1));
+		Logs(LOG_INFO,__FILE__,__LINE__,"section 1 json object of %s is : \n%s", ptr->video, json_object_to_json_string(jObjSection1));
 
 		struct EitInfoSection * st_eitSection1 = json_parse(jObjSection1);
 		if ( st_eitSection1 != NULL ) {

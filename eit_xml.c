@@ -17,13 +17,13 @@ static int init_info_section_xml(eitInfoSectionXml_t *section);
 static int init_parental_rating_xml(parentalRatingXml_t *parental_rating_xml);
 static int init_short_event_xml(shortEventXml_t *short_event_xml);
 static xmlConfig_t *init_xml_conf(char * xmlContent, size_t xmlSize);
-static int build_component_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
-static int build_content_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
+static void build_component_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
+static void build_content_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
 static int build_eit_section_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
-static int build_parental_rating_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
+static void build_parental_rating_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
 static int build_program_number(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoXml_t *eitInfoXml);
 static int build_sections_event_id(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoXml_t *eitInfoXml);
-static int build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
+static void build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
 static int build_starttime_duration_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
 static json_object *convert_content_desc_xml_to_json(contentDescXml_t *content_desc_xml);
 static json_object *convert_component_desc_xml_to_json(eitInfoSectionXml_t *section);
@@ -33,8 +33,7 @@ static json_object *convert_short_desc_xml_to_json(shortEventXml_t *short_event_
 /*static json_object *convert_starttime_to_json(long starttime);*/
 
 
-
-static int build_component_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
+static void build_component_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
     char xPathQuery[512];
     xmlXPathObjectPtr xpathRes;
     int i;
@@ -76,27 +75,10 @@ static int build_component_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitI
             xmlFree(node);
         }
     }
-    else {        
-        Logs(LOG_ERROR,__FILE__,__LINE__,"Program component descriptor not found");
-        return -1;
-    }
     xmlXPathFreeObject(xpathRes);
-
-    for (i = 0; i < COMPONENT_DESC_SIZE; i++) {
-        if (NULL != section->component_desc_xml[i]->stream_content &&
-            (NULL == section->component_desc_xml[i]->component_type ||
-            -1 == section->component_desc_xml[i]->component_tag ||
-            NULL == section->component_desc_xml[i]->language ||
-            NULL == section->component_desc_xml[i]->text)) {
-            Logs(LOG_ERROR,__FILE__,__LINE__,"Program component descriptor found but invalid");
-            return -1;
-        }
-    }
-
-    return 0;
 }
 
-static int build_content_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
+static void build_content_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
     char xPathQuery[512];
     xmlXPathObjectPtr xpathRes;
 
@@ -122,36 +104,21 @@ static int build_content_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInf
         xmlFree(attribute);
         xmlFree(node);
     }
-    else {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"Program content descriptor not found");
-        return -1;
-    }
     xmlXPathFreeObject(xpathRes);
-
-    if (-1 == section->content_desc_xml->content_l1 || -1 == section->content_desc_xml->content_l2) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"Program content descriptor found but invalid");
-        return -1;
-    }
-
-    return 0;
 }
 
-static int build_eit_section_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {    
-    if (0 != (build_short_event_xml(eitXml, xmlConf, section)))
-        return -1;
-    if (0 != (build_parental_rating_xml(eitXml, xmlConf, section)))
-        return -1;
-    if (0 != (build_content_desc_xml(eitXml, xmlConf, section)))
-        return -1;
-    if (0 != (build_component_desc_xml(eitXml, xmlConf, section)))
-        return -1;
+static int build_eit_section_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
+    build_short_event_xml(eitXml, xmlConf, section);
+    build_parental_rating_xml(eitXml, xmlConf, section);
+    build_content_desc_xml(eitXml, xmlConf, section);
+    build_component_desc_xml(eitXml, xmlConf, section);
     if (0 != (build_starttime_duration_xml(eitXml, xmlConf, section)))
         return -1;
 
     return 0;
 }
 
-static int build_parental_rating_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
+static void build_parental_rating_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
     char xPathQuery[512];
     xmlXPathObjectPtr xpathRes;
 
@@ -177,18 +144,7 @@ static int build_parental_rating_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eit
         xmlFree(attribute);
         xmlFree(node);
     }
-    else {        
-        Logs(LOG_ERROR,__FILE__,__LINE__,"Program parental rating not found");
-        return -1;
-    }
     xmlXPathFreeObject(xpathRes);
-
-    if (-1 == section->parental_rating_xml->rating || NULL == section->parental_rating_xml->country_code) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"Program parental rating found but invalid");
-        return -1;
-    }
-
-    return 0;
 }
 
 static int build_program_number(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoXml_t *eitInfoXml) {
@@ -230,7 +186,7 @@ static int build_program_number(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoX
 
 static int build_sections_event_id(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoXml_t *eitInfoXml) {
     char xPathQuery[512];
-    xmlXPathObjectPtr xpathRes;    
+    xmlXPathObjectPtr xpathRes;
 
     eitInfoXml->section0->event_id = -1;
     eitInfoXml->section1->event_id = -1;
@@ -275,7 +231,7 @@ static int build_sections_event_id(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitIn
     return 0;
 }
 
-static int build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
+static void build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
     char xPathQuery[512];
     xmlXPathObjectPtr xpathRes;
 
@@ -304,23 +260,13 @@ static int build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfo
         xmlFree(attribute);
         xmlFree(node);
     }
-    else {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"Program short desc not found");
-        return -1;
-    }
     xmlXPathFreeObject(xpathRes);
-    if (NULL == section->short_event_xml->event_lang ||
-        NULL == section->short_event_xml->event_name ||
-        NULL == section->short_event_xml->event_text) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"Program short desc found but invalid");
-        return -1;
+
+    if (NULL != section->short_event_xml->event_text) {
+        // reduce text lenght to avoid dropping eit packet
+        size_t textLenght = strlen(section->short_event_xml->event_text);
+        section->short_event_xml->event_text[textLenght - (textLenght - 20)] = 0;
     }
-
-    // reduce text lenght to avoid dropping eit packet
-    size_t textLenght = strlen(section->short_event_xml->event_text);
-    section->short_event_xml->event_text[textLenght - (textLenght - 20)] = 0;
-
-    return 0;
 }
 
 static int build_starttime_duration_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
@@ -364,22 +310,25 @@ static int build_starttime_duration_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, 
 }
 
 static json_object *convert_content_desc_xml_to_json(contentDescXml_t *content_desc_xml) {
-    // create content desc json object
-    json_object * jContentDesc = json_object_new_object();
-
     // create json content desc array
     json_object *jContentDescArray = json_object_new_array();
 
-    // create sub item of content desc json object
-    json_object *jContentDescContentL1 = json_object_new_int(content_desc_xml->content_l1);
-    json_object *jContentDescContentL2 = json_object_new_int(content_desc_xml->content_l2);
+    if (-1 != content_desc_xml->content_l1 && 
+        -1 != content_desc_xml->content_l2) {
+        // create content desc json object
+        json_object * jContentDesc = json_object_new_object();
 
-    // add sub item inside objet    
-    json_object_object_add(jContentDesc,"content_nibble_level_1", jContentDescContentL1);
-    json_object_object_add(jContentDesc,"content_nibble_level_2", jContentDescContentL2);
+        // create sub item of content desc json object
+        json_object *jContentDescContentL1 = json_object_new_int(content_desc_xml->content_l1);
+        json_object *jContentDescContentL2 = json_object_new_int(content_desc_xml->content_l2);
 
-    // add objet into array
-    json_object_array_add(jContentDescArray, jContentDesc);
+        // add sub item inside objet    
+        json_object_object_add(jContentDesc,"content_nibble_level_1", jContentDescContentL1);
+        json_object_object_add(jContentDesc,"content_nibble_level_2", jContentDescContentL2);
+
+        // add objet into array
+        json_object_array_add(jContentDescArray, jContentDesc);
+    }
 
     return jContentDescArray;
 }
@@ -425,15 +374,19 @@ static json_object *convert_duration_to_json(int duration) {
 
 static json_object *convert_parental_rating_xml_to_json(parentalRatingXml_t *parental_rating_xml) {
     // create parental rating desc json object
-    json_object * jParentalRatingDesc = json_object_new_object();
+    json_object *jParentalRatingDesc = json_object_new_object();
 
-    // create sub item of parental rating desc json object
-    json_object *jParentalRatingDescRating = json_object_new_int(parental_rating_xml->rating);
-    json_object *jParentalRatingDescCountryCode = json_object_new_string(parental_rating_xml->country_code);
+    if (-1 != parental_rating_xml->rating && 
+        NULL != parental_rating_xml->country_code) {
 
-    // add sub item inside objet
-    json_object_object_add(jParentalRatingDesc,"age", jParentalRatingDescRating);
-    json_object_object_add(jParentalRatingDesc,"country_code", jParentalRatingDescCountryCode);
+        // create sub item of parental rating desc json object
+        json_object *jParentalRatingDescRating = json_object_new_int(parental_rating_xml->rating);
+        json_object *jParentalRatingDescCountryCode = json_object_new_string(parental_rating_xml->country_code);
+
+        // add sub item inside objet
+        json_object_object_add(jParentalRatingDesc,"age", jParentalRatingDescRating);
+        json_object_object_add(jParentalRatingDesc,"country_code", jParentalRatingDescCountryCode);
+    }
 
     return jParentalRatingDesc;
 }
@@ -441,16 +394,21 @@ static json_object *convert_parental_rating_xml_to_json(parentalRatingXml_t *par
 static json_object *convert_short_desc_xml_to_json(shortEventXml_t *short_event_xml) {
     // create short desc json object
     json_object *jShortDesc = json_object_new_object();
+    
+    if (NULL != short_event_xml->event_lang &&
+        NULL != short_event_xml->event_name &&
+        NULL != short_event_xml->event_text) {        
 
-    // create sub item of short desc json object
-    json_object *jShortDescEventLang = json_object_new_string(short_event_xml->event_lang);
-    json_object *jShortDescEventName = json_object_new_string(short_event_xml->event_name);
-    json_object *jShortDescEventText = json_object_new_string(short_event_xml->event_text);
+        // create sub item of short desc json object
+        json_object *jShortDescEventLang = json_object_new_string(short_event_xml->event_lang);
+        json_object *jShortDescEventName = json_object_new_string(short_event_xml->event_name);
+        json_object *jShortDescEventText = json_object_new_string(short_event_xml->event_text);
 
-    // add sub item inside objet
-    json_object_object_add(jShortDesc,"event_lang", jShortDescEventLang);
-    json_object_object_add(jShortDesc,"event_name", jShortDescEventName);
-    json_object_object_add(jShortDesc,"event_text", jShortDescEventText);
+        // add sub item inside objet
+        json_object_object_add(jShortDesc,"event_lang", jShortDescEventLang);
+        json_object_object_add(jShortDesc,"event_name", jShortDescEventName);
+        json_object_object_add(jShortDesc,"event_text", jShortDescEventText);
+    }
 
     return jShortDesc;
 }
@@ -476,7 +434,7 @@ json_object *convert_eit_struct_to_json(eitInfoSectionXml_t *section) {
     
     // short desc
     json_object *jShortDesc = convert_short_desc_xml_to_json(section->short_event_xml);
-    json_object_object_add(jObj, "SHORT_EVENT_DESCRIPTOR", jShortDesc);
+    json_object_object_add(jObj, "SHORT_EVENT_DESCRIPTOR", jShortDesc);    
 
     // parental rating desc
     json_object * jParentalRatingDesc = convert_parental_rating_xml_to_json(section->parental_rating_xml);
