@@ -488,7 +488,7 @@ static bool file_Delay(void)
             pf_Sleep( i_delay );
         else if ( i_delay < -MAX_LATENESS )
         {
-            Logs(LOG_WARNING,__FILE__,__LINE__,"too much lateness, resetting clocks" );
+            //Logs(LOG_WARNING,__FILE__,__LINE__,"too much lateness, resetting clocks" );
             i_file_first_wall = i_wall;
             i_file_first_stc = i_stc;
         }
