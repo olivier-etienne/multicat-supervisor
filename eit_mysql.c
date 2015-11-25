@@ -16,22 +16,22 @@
  * Local declarations
  *****************************************************************************/
 static 	MYSQL *conn = NULL;
- static char * error = NULL;
- 
- /*****************************************************************************
- * Functions
- *****************************************************************************/
- int eit_mysql_init(DataBaseInformations infos)
- {
-   conn = mysql_init(NULL); 
-   
-   /* Connect to database */
-   if (!mysql_real_connect(conn, infos.host,infos.username,infos.password,infos.database,infos.port, NULL, 0)) {
-      error = (char*)mysql_error(conn);
-      return 1;
-   }
-   
-   return 0;
+static char * error = NULL;
+
+/*****************************************************************************
+* Functions
+*****************************************************************************/
+int eit_mysql_init(DataBaseInformations infos)
+{
+	conn = mysql_init(NULL); 
+
+	/* Connect to database */
+	if (!mysql_real_connect(conn, infos.host,infos.username,infos.password,infos.database,infos.port, NULL, 0)) {
+		error = (char*)mysql_error(conn);
+		return 1;
+	}
+
+	return 0;
 }
 
 char * eit_mysql_getLastError()
@@ -68,7 +68,7 @@ static char * strcpyWithNull(char *src)
 static int atoiWithNull(char * src) {
 	if ( src == NULL ) 
 		return 0;
-	
+
 	return  atoi(src);
 }
 
@@ -85,17 +85,17 @@ void eit_mysql_getList_free(EitMysql *list,int size)
 		free(list[i].section0);
 		free(list[i].section1);
 	}
-	
+
 	free(list);
 }
 
 EitMysql * eit_mysql_cpyList(EitMysql *list,int size)
-{	
+{
 	EitMysql * cpy = NULL;
 	int i;
 
 	cpy = (EitMysql *) malloc(sizeof(EitMysql) * size );
-   
+
 	for(i=0;i<size;i++) 
 	{
 		cpy[i].id = list[i].id;
@@ -129,7 +129,7 @@ int eit_mysql_getList(EitMysql **list,int * size)
 	if ( conn == NULL ) {
 		return -1;
 	}
-   
+
 	if (mysql_query(conn, "SELECT eit.ideit, eit.lcn, eit.description, eit.user1, eit.section_0, eit.section_1, eit.enable, eit.to_inject, eit.eit_ts, video.filename, eit.address, eit.port, eit.tsid, eit.sid, eit.onid, eit.status FROM eit INNER JOIN video ON eit.videoid=video.idvideo WHERE eit.enable=1")) {
 		error = (char*)mysql_error(conn);
 		return -2;
@@ -141,7 +141,7 @@ int eit_mysql_getList(EitMysql **list,int * size)
 	if ( *size > 0 ) {
 		*list = (EitMysql *) malloc(sizeof(EitMysql) * (*size) );
 		memset(*list,0,sizeof(EitMysql) * (*size));
-   
+
 		while ((row = mysql_fetch_row(res)) != NULL) {
 			rowIndex = 0;
 		
@@ -166,8 +166,8 @@ int eit_mysql_getList(EitMysql **list,int * size)
 		}
 	}
 	mysql_free_result(res);
-   
-   return *size;
+
+	return *size;
 }
 
 int eit_mysql_setStatus(int id,char * status)
@@ -175,9 +175,12 @@ int eit_mysql_setStatus(int id,char * status)
 	if ( conn == NULL ) {
 		return -1;
 	}
- 
+
 	char request[255];
-	sprintf(request,"UPDATE eit SET status='%s',lastUpdate=NOW() WHERE ideit=%d",status,id);
+	if (NULL != strstr(status, "FAILURE"))
+		sprintf(request,"UPDATE eit SET status='%s', enable=0, lastUpdate=NOW() WHERE ideit=%d",status,id);
+	else
+		sprintf(request,"UPDATE eit SET status='%s', lastUpdate=NOW() WHERE ideit=%d",status,id);    	
 	if (mysql_query(conn, request)) {
 		error = (char*)mysql_error(conn);
 		//printf("Erreur MYSQL %s\n",error);
