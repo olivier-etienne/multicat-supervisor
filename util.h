@@ -108,6 +108,7 @@ void load_eit(struct EitInfo *str_eit_info);
 uint16_t convertStrToLong(char * str);
 uint8_t convertStrToInt(char * str);
 char * getValueFromIni(char * tag,char *prefix,int index);
+void utf8_to_latin9(const char *const input);
 
 
 
@@ -177,5 +178,24 @@ static inline void retx_set_num(uint8_t *p_retx, uint16_t i_num)
 static inline uint16_t retx_get_num(const uint8_t *p_retx)
 {
     return ((uint16_t)p_retx[6] << 8) | p_retx[7];
+}
+
+
+static inline unsigned int to_latin9(const unsigned int code)
+{
+    /* Code points 0 to U+00FF are the same in both. */
+    if (code < 256U)
+        return code;
+    switch (code) {
+    case 0x0152U: return 188U; /* U+0152 = 0xBC: OE ligature */
+    case 0x0153U: return 189U; /* U+0153 = 0xBD: oe ligature */
+    case 0x0160U: return 166U; /* U+0160 = 0xA6: S with caron */
+    case 0x0161U: return 168U; /* U+0161 = 0xA8: s with caron */
+    case 0x0178U: return 190U; /* U+0178 = 0xBE: Y with diaresis */
+    case 0x017DU: return 180U; /* U+017D = 0xB4: Z with caron */
+    case 0x017EU: return 184U; /* U+017E = 0xB8: z with caron */
+    case 0x20ACU: return 164U; /* U+20AC = 0xA4: Euro */
+    default:      return 256U;
+    }
 }
 

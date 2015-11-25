@@ -1,7 +1,9 @@
 #include <string.h>
+#include <stdbool.h>
 
 #include "logs.h"
 #include "eit_xml.h"
+#include "util.h"
 
 /*****************************************************************************
  * Prototypage
@@ -237,7 +239,7 @@ static void build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInf
 
     section->short_event_xml->event_lang = NULL;
     section->short_event_xml->event_name = NULL;
-    section->short_event_xml->event_text = NULL;  
+    section->short_event_xml->event_text = NULL;
 
     // init context before new XPath query
     xmlConf->ctxt = xmlXPathNewContext(xmlParseMemory(eitXml->content, eitXml->size));
@@ -251,10 +253,14 @@ static void build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInf
         while(attribute && attribute->name && attribute->children) {
             if (xmlStrEqual(attribute->name, (const xmlChar *)"lang"))
                 section->short_event_xml->event_lang = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
-            if (xmlStrEqual(attribute->name, (const xmlChar *)"event_name"))
+            if (xmlStrEqual(attribute->name, (const xmlChar *)"event_name")) {
                 section->short_event_xml->event_name = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
-            if (xmlStrEqual(attribute->name, (const xmlChar *)"text"))
+                utf8_to_latin9(section->short_event_xml->event_name);
+            }
+            if (xmlStrEqual(attribute->name, (const xmlChar *)"text")) {
                 section->short_event_xml->event_text = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
+                utf8_to_latin9(section->short_event_xml->event_text);
+            }
             attribute = attribute->next;
         }
         xmlFree(attribute);
@@ -397,7 +403,7 @@ static json_object *convert_short_desc_xml_to_json(shortEventXml_t *short_event_
     
     if (NULL != short_event_xml->event_lang &&
         NULL != short_event_xml->event_name &&
-        NULL != short_event_xml->event_text) {        
+        NULL != short_event_xml->event_text) {
 
         // create sub item of short desc json object
         json_object *jShortDescEventLang = json_object_new_string(short_event_xml->event_lang);
@@ -434,7 +440,7 @@ json_object *convert_eit_struct_to_json(eitInfoSectionXml_t *section) {
     
     // short desc
     json_object *jShortDesc = convert_short_desc_xml_to_json(section->short_event_xml);
-    json_object_object_add(jObj, "SHORT_EVENT_DESCRIPTOR", jShortDesc);    
+    json_object_object_add(jObj, "SHORT_EVENT_DESCRIPTOR", jShortDesc);
 
     // parental rating desc
     json_object * jParentalRatingDesc = convert_parental_rating_xml_to_json(section->parental_rating_xml);
@@ -625,10 +631,10 @@ eitInfoXml_t *init_eit_info_xml() {
         Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
         return NULL;
     }
-    memset(eitInfoXml->section0, 0, sizeof(*eitInfoXml->section0));   
+    memset(eitInfoXml->section0, 0, sizeof(*eitInfoXml->section0));
     
     if (0 != (init_info_section_xml(eitInfoXml->section0)))
-        return NULL;    
+        return NULL;
 
     if (NULL == (eitInfoXml->section1 = malloc(sizeof(*eitInfoXml->section1)))) {
         Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
@@ -739,7 +745,7 @@ static xmlConfig_t *init_xml_conf(char * xmlContent, size_t xmlSize) {
     memset(xmlConf, 0, sizeof(*xmlConf));
     
     // Create DOM tree and init XPath env
-    xmlKeepBlanksDefault(0);    
+    xmlKeepBlanksDefault(0);
     xmlXPathInit();
 
     // Create context for XPath query
