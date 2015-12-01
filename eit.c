@@ -44,6 +44,15 @@ static void build_desc4d(uint8_t *desc, char *event_name, char *text,char * lang
 
 	desc4d_init(desc);
     desc4d_set_lang(desc, (uint8_t *)lang);
+
+    // reduce event_name lenght to avoid dropping eit packet
+    size_t eventNameLenght = strlen(event_name);
+    event_name[eventNameLenght - (eventNameLenght - 50)] = 0;
+
+    // reduce text lenght to avoid dropping eit packet
+    size_t textLenght = strlen(text);
+    text[textLenght - (textLenght - 20)] = 0;
+
     desc4d_set_event_name(desc, (uint8_t *)event_name, strlen(event_name));
     desc4d_set_text(desc, (uint8_t *)text, strlen(text));
     desc4d_set_length(desc);
@@ -61,8 +70,8 @@ static struct EitInfoSection * getInfoSection() {
 static void build_desc4e(uint8_t *desc) {
 
 	struct EitInfoSection * infoSection = getInfoSection();
-    uint8_t k = 0;
-    uint8_t *item_n;
+    //uint8_t k = 0;
+    //uint8_t *item_n;
 		
     desc4e_init(desc);
     desc_set_length(desc, 255);
@@ -71,7 +80,8 @@ static void build_desc4e(uint8_t *desc) {
     desc4e_set_last_desc_number(desc, 0);
     desc4e_set_lang(desc, (uint8_t *)infoSection->ext_event_desc.lang);
     desc4e_set_items_length(desc, 0);
-
+    
+    /*
     desc4e_set_items_length(desc, 255);
     uint8_t *first_item = desc4e_get_item(desc, 0);
 
@@ -85,7 +95,11 @@ static void build_desc4e(uint8_t *desc) {
     
     item_n = desc4e_get_item(desc, k);
     desc4e_set_items_length(desc, item_n - first_item);
-    
+    */
+
+    // reduce text lenght to avoid dropping eit packet
+    size_t textLenght = strlen(infoSection->ext_event_desc.text);
+    infoSection->ext_event_desc.text[textLenght - (textLenght - 20)] = 0;
 
     desc4e_set_text(desc, (uint8_t *)infoSection->ext_event_desc.text, strlen(infoSection->ext_event_desc.text));
     desc4e_set_length(desc);
@@ -405,8 +419,8 @@ static void generate_eit(uint8_t ** output_eit,size_t* ouput_length)
             desc = descs_get_desc(desc_loop, desc_counter++);
             build_desc4d(desc,infoSection->short_event_desc.event_name,infoSection->short_event_desc.event_text,infoSection->short_event_desc.event_lang);
 
-            //desc = descs_get_desc(desc_loop, desc_counter++);
-			//build_desc4e(desc);
+            desc = descs_get_desc(desc_loop, desc_counter++);
+			build_desc4e(desc);
 			
             desc = descs_get_desc(desc_loop, desc_counter++);
 			build_desc61(desc);

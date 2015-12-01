@@ -267,12 +267,6 @@ static void build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInf
         xmlFree(node);
     }
     xmlXPathFreeObject(xpathRes);
-
-    if (NULL != section->short_event_xml->event_text) {
-        // reduce text lenght to avoid dropping eit packet
-        size_t textLenght = strlen(section->short_event_xml->event_text);
-        section->short_event_xml->event_text[textLenght - (textLenght - 20)] = 0;
-    }
 }
 
 static int build_starttime_duration_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
