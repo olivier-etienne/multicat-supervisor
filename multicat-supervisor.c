@@ -204,6 +204,7 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 		EitMysql * ptr = search_streaming(bdList,bdListSize,streamingList[i].id);
 		if ( ptr == NULL ) {
 			// DELETE STREAMING
+			eit_mysql_setStatus(streamingList[i].id,"STOPPING");
 			Logs(LOG_INFO,__FILE__,__LINE__,"DELETE STREAMING [%d,%d,%s,%s,%s,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
 			char cmd[512];
 			sprintf(cmd,"%s/../sh/multicat.sh --provider %d stop",pathdir,streamingList[i].id);
@@ -247,6 +248,7 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 		EitMysql * ptr = search_streaming(streamingList,streamingListSize,bdList[i].id);
 		if ( ptr == NULL ) {
 			// NEW STREAMING
+			eit_mysql_setStatus(bdList[i].id,"STARTING");
 			Logs(LOG_INFO,__FILE__,__LINE__,"NEW STREAMING [%d,%d,%s,%s,%s,%d]",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port);
 			struct EitInfo eit_info;
 			switch (convertStringsToEitStruct(&bdList[i],&eit_info)) {
