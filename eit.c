@@ -47,7 +47,7 @@ static void build_desc4d(uint8_t *desc, char *event_name, char *text,char * lang
 
     // reduce event_name lenght to avoid dropping eit packet
     size_t eventNameLenght = strlen(event_name);
-    event_name[eventNameLenght - (eventNameLenght - 50)] = 0;
+    event_name[eventNameLenght - (eventNameLenght - 20)] = 0;
 
     // reduce text lenght to avoid dropping eit packet
     size_t textLenght = strlen(text);
