@@ -62,7 +62,7 @@ static char *rechercherParamValue(char *param,pstSection Section);
 apr_pool_t * apr_memory_create()
 {
 	apr_pool_t * tab = (apr_pool_t*) malloc(sizeof(apr_pool_t));
-	tab->ptrTab = (void*) malloc(sizeof(void) * 1024 );
+	tab->ptrTab = (void**) malloc(sizeof(void*) * 1024 );
 	tab->size_max = 1024;
 	tab->size = 0;
 	memset(tab->ptrTab,0,tab->size_max);
