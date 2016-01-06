@@ -244,16 +244,16 @@ static void build_desc61(uint8_t *desc) {
 }
 
 /* DVB  Descriptor 0x69: PDC_descriptor */
-static void build_desc69(uint8_t *desc) {
-	//struct EitInfoSection * infoSection = getInfoSection();
+// static void build_desc69(uint8_t *desc) {
+// 	//struct EitInfoSection * infoSection = getInfoSection();
 
-    desc69_init(desc);
-//    desc69_set_pil(desc, 0x5d805);
-    desc69_set_day(desc, 27);
-    desc69_set_month(desc, 02);
-    desc69_set_hour(desc, 18);
-    desc69_set_minute(desc, 20);
-}
+//     desc69_init(desc);
+// //    desc69_set_pil(desc, 0x5d805);
+//     desc69_set_day(desc, 27);
+//     desc69_set_month(desc, 02);
+//     desc69_set_hour(desc, 18);
+//     desc69_set_minute(desc, 20);
+// }
 
 /* ---  Descriptor 0x7d: XAIT location descriptor */
 /* ---  Descriptor 0x7e: FTA_content_management_descriptor */
@@ -297,36 +297,36 @@ static void output_psi_section(uint8_t * packetEIT, uint16_t pid, uint8_t *cc, u
     } while (section_offset < section_length);	
 }
 
-static void dump_eit_info(struct EitInfoSection * info_section) {
-	int i;
+// static void dump_eit_info(struct EitInfoSection * info_section) {
+// 	int i;
 	
-	printf("--------------------------------------------------------------------------------\n");
-	printf("------------------- SECTION %d----------------\n",section);
-	printf("SHORT_EVENT_DESCRIPTOR - event_name : %s\n",info_section->short_event_desc.event_name);
-	printf("SHORT_EVENT_DESCRIPTOR - event_text : %s\n",info_section->short_event_desc.event_text);
-	printf("SHORT_EVENT_DESCRIPTOR - event_lang : %s\n",info_section->short_event_desc.event_lang);
+// 	printf("--------------------------------------------------------------------------------\n");
+// 	printf("------------------- SECTION %d----------------\n",section);
+// 	printf("SHORT_EVENT_DESCRIPTOR - event_name : %s\n",info_section->short_event_desc.event_name);
+// 	printf("SHORT_EVENT_DESCRIPTOR - event_text : %s\n",info_section->short_event_desc.event_text);
+// 	printf("SHORT_EVENT_DESCRIPTOR - event_lang : %s\n",info_section->short_event_desc.event_lang);
 
-	printf("EXTENDED_EVENT_DESCRIPTOR - text : %s\n",info_section->ext_event_desc.text);
-	printf("EXTENDED_EVENT_DESCRIPTOR - lang : %s\n",info_section->ext_event_desc.lang);
+// 	printf("EXTENDED_EVENT_DESCRIPTOR - text : %s\n",info_section->ext_event_desc.text);
+// 	printf("EXTENDED_EVENT_DESCRIPTOR - lang : %s\n",info_section->ext_event_desc.lang);
 
-	for(i=0;i<EXTEVENTDESC_ITEM_SIZE;i++) {
-		printf("EXTENDED_EVENT_DESCRIPTOR - %d text : %s\n",i+1,info_section->ext_event_desc.items[i].text);
-		printf("EXTENDED_EVENT_DESCRIPTOR - %d desc : %s\n",i+1,info_section->ext_event_desc.items[i].desc);
-	}
+// 	for(i=0;i<EXTEVENTDESC_ITEM_SIZE;i++) {
+// 		printf("EXTENDED_EVENT_DESCRIPTOR - %d text : %s\n",i+1,info_section->ext_event_desc.items[i].text);
+// 		printf("EXTENDED_EVENT_DESCRIPTOR - %d desc : %s\n",i+1,info_section->ext_event_desc.items[i].desc);
+// 	}
 
-	for (i=0;i<3;i++) {
-		printf("COMPONENT_DESCRIPTOR [%d] - stream_content : %0x\n",i,info_section->component_desc[i].stream_content);
-		printf("COMPONENT_DESCRIPTOR [%d] - component_type : %0x\n",i,info_section->component_desc[i].component_type);
-		printf("COMPONENT_DESCRIPTOR [%d] - set_component_tag : %d\n",i,info_section->component_desc[i].set_component_tag);
-		printf("COMPONENT_DESCRIPTOR [%d] - text : %s\n",i,info_section->component_desc[i].text);
-		printf("COMPONENT_DESCRIPTOR [%d] - lang : %s\n",i,info_section->component_desc[i].lang);
-	}
+// 	for (i=0;i<3;i++) {
+// 		printf("COMPONENT_DESCRIPTOR [%d] - stream_content : %0x\n",i,info_section->component_desc[i].stream_content);
+// 		printf("COMPONENT_DESCRIPTOR [%d] - component_type : %0x\n",i,info_section->component_desc[i].component_type);
+// 		printf("COMPONENT_DESCRIPTOR [%d] - set_component_tag : %d\n",i,info_section->component_desc[i].set_component_tag);
+// 		printf("COMPONENT_DESCRIPTOR [%d] - text : %s\n",i,info_section->component_desc[i].text);
+// 		printf("COMPONENT_DESCRIPTOR [%d] - lang : %s\n",i,info_section->component_desc[i].lang);
+// 	}
 	
-	printf("PARENTAL_RATING_DESCRIPTOR - country_code : %s\n",info_section->parent_rating_desc.country_code);
-	printf("PARENTAL_RATING_DESCRIPTOR - age : %d\n",info_section->parent_rating_desc.age);
-	printf("--------------------------------------------------------------------------------\n");
+// 	printf("PARENTAL_RATING_DESCRIPTOR - country_code : %s\n",info_section->parent_rating_desc.country_code);
+// 	printf("PARENTAL_RATING_DESCRIPTOR - age : %d\n",info_section->parent_rating_desc.age);
+// 	printf("--------------------------------------------------------------------------------\n");
 
-}
+// }
 
 
 /* DVB  Event Information Table (EIT) */

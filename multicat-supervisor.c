@@ -297,35 +297,35 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 	}
 }
 
-static void dump_eit_mysql(EitMysql * st,int size)
-{
-	int i;	
+// static void dump_eit_mysql(EitMysql * st,int size)
+// {
+// 	int i;	
 	
-	for(i=0;i<size;i++) {
+// 	for(i=0;i<size;i++) {
 		
-		printf("--------------------------------------------------------------------------------\n");
-		printf("- ID			: %d\n",st[i].id);
-		printf("- LCN			: %d\n",st[i].lcn);
-		printf("- DESCRIPTION	: %s\n",st[i].description);
-		printf("- USER			: %s\n",st[i].user);
-		printf("- SECTION 0		: %s\n",st[i].section0);
-		printf("- SECTION 1		: %s\n",st[i].section1);
-		printf("- ENABLE		: %d\n",st[i].enable);
-		printf("- TO_INJECT		: %d\n",st[i].to_inject);
-		printf("- TIMESTAMP		: %ld\n",st[i].timestamp);
-		printf("- VIDEO			: %s\n",st[i].video);
-		printf("- ADDRESS		: %s\n",st[i].address);
-		printf("- PORT			: %d\n",st[i].port);
-		printf("- TSID			: %d\n",st[i].tsid);
-		printf("- SID			: %d\n",st[i].sid);
-		printf("- ONID			: %d\n",st[i].onid);
-		printf("- STATUS		: %s\n",st[i].status);
-		printf("--------------------------------------------------------------------------------\n");
+// 		printf("--------------------------------------------------------------------------------\n");
+// 		printf("- ID			: %d\n",st[i].id);
+// 		printf("- LCN			: %d\n",st[i].lcn);
+// 		printf("- DESCRIPTION	: %s\n",st[i].description);
+// 		printf("- USER			: %s\n",st[i].user);
+// 		printf("- SECTION 0		: %s\n",st[i].section0);
+// 		printf("- SECTION 1		: %s\n",st[i].section1);
+// 		printf("- ENABLE		: %d\n",st[i].enable);
+// 		printf("- TO_INJECT		: %d\n",st[i].to_inject);
+// 		printf("- TIMESTAMP		: %ld\n",st[i].timestamp);
+// 		printf("- VIDEO			: %s\n",st[i].video);
+// 		printf("- ADDRESS		: %s\n",st[i].address);
+// 		printf("- PORT			: %d\n",st[i].port);
+// 		printf("- TSID			: %d\n",st[i].tsid);
+// 		printf("- SID			: %d\n",st[i].sid);
+// 		printf("- ONID			: %d\n",st[i].onid);
+// 		printf("- STATUS		: %s\n",st[i].status);
+// 		printf("--------------------------------------------------------------------------------\n");
 		
-	}
+// 	}
 
 
-}
+// }
 
 static void stop_all_streaming()
 {

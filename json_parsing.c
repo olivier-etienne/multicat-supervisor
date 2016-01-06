@@ -159,7 +159,7 @@ static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSe
 		if ( strcmp(key,"stream_content") == 0 ) {
 			switch(type) {
 				case json_type_string :
-					sscanf(json_object_get_string(val),"%x",&eitStrInfo->component_desc[i].stream_content);
+					sscanf(json_object_get_string(val),"%" SCNu8,&eitStrInfo->component_desc[i].stream_content);
 					break;
 				case json_type_int :
 					eitStrInfo->component_desc[i].stream_content = json_object_get_int(val);
@@ -172,7 +172,7 @@ static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSe
 		else if ( strcmp(key,"component_type") == 0 ) {
 			switch(type) {
 				case json_type_string :
-					sscanf(json_object_get_string(val),"%x",&eitStrInfo->component_desc[i].component_type);
+					sscanf(json_object_get_string(val),"%" SCNu8,&eitStrInfo->component_desc[i].component_type);
 					break;
 				case json_type_int :
 					eitStrInfo->component_desc[i].component_type = json_object_get_int(val);
