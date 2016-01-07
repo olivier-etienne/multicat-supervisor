@@ -431,22 +431,27 @@ json_object *convert_eit_struct_to_json(eitInfoSectionXml_t *section) {
     // duration
     json_object *jDurationValue = convert_duration_to_json(section->duration);
     json_object_object_add(jObj, "duration", jDurationValue);
+    json_object_put(jDurationValue);
     
     // short desc
     json_object *jShortDesc = convert_short_desc_xml_to_json(section->short_event_xml);
     json_object_object_add(jObj, "SHORT_EVENT_DESCRIPTOR", jShortDesc);
+    json_object_put(jShortDesc);
 
     // parental rating desc
     json_object * jParentalRatingDesc = convert_parental_rating_xml_to_json(section->parental_rating_xml);
     json_object_object_add(jObj, "PARENTAL_RATING_DESCRIPTOR", jParentalRatingDesc);
+    json_object_put(jParentalRatingDesc);
 
     // content desc
     json_object *jContentDescArray = convert_content_desc_xml_to_json(section->content_desc_xml);
     json_object_object_add(jObj, "CONTENT_DESCRIPTOR", jContentDescArray);
+    json_object_put(jContentDescArray);
 
     // component desc
     json_object *jComponentDescArray = convert_component_desc_xml_to_json(section);
     json_object_object_add(jObj, "COMPONENT_DESCRIPTOR", jComponentDescArray);
+    json_object_put(jComponentDescArray);
 
     return jObj;
 }

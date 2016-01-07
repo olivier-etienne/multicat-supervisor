@@ -157,6 +157,8 @@ static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 		else {
 			return -2;
 		}
+		// clean the json object
+  		json_object_put(jObjSection0);
 	}
 	else {
 		Logs(LOG_ERROR,__FILE__,__LINE__,"Missing section 0 in database");
@@ -176,6 +178,8 @@ static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 		else {
 			return -2;
 		}
+		// clean the json object
+		json_object_put(jObjSection1);
 	}
 
 	if (ptr->to_inject == 0) {
