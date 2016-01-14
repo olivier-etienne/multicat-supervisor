@@ -116,37 +116,24 @@ EitMysql * search_streaming(EitMysql * list,int size,int id) {
  */
 static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 {
-	char videoPath[512];
-	eitXml_t *eitXml = NULL; 
-	eitInfoXml_t *eitInfoXml = NULL;
+	char videoPath[512];	
 
 	eit_info->tsid = ptr->tsid;
 	eit_info->sid = ptr->sid;
 	eit_info->onid = ptr->onid;
 
-	if (ptr->to_inject == 0) {
-		// Init EIT XML
-		if (NULL == (eitXml = init_eit_xml()))
-			return -3;
+	if (ptr->to_inject == 0) {		
 
-		// load eit xml from ts file
+		// build eit xml from ts and insert into eit struct
 		sprintf(videoPath, "/usr/local/multicat-tools/videos/%s", ptr->video);
-		if (0 != extract_eti_xml_from_ts(eitXml, videoPath))
-			return -3;
-
-		// Init Eit XML
-		if (NULL == (eitInfoXml = init_eit_info_xml()))
-			return -3;
-
-		// build eit from xml
-		if (0 != (convert_xml_to_eit_struct(eitXml, eitInfoXml)))
+		if (0 != extract_eit_xml_to_eit_struct(eit_info, videoPath))
 			return -3;
 	}
 	
 	if ( *ptr->section0 != '\0' ) {
 		json_object * jObjSection0 = json_object_new_object();
 
-		jObjSection0 = (ptr->to_inject == 1) ? json_tokener_parse(ptr->section0) : convert_eit_struct_to_json(eitInfoXml->section0);
+		jObjSection0 = (ptr->to_inject == 1) ? json_tokener_parse(ptr->section0) : convert_eit_struct_to_json(eit_info->section0);
 		Logs(LOG_INFO,__FILE__,__LINE__,"section 0 json object of %s is : \n%s", ptr->video, json_object_to_json_string(jObjSection0));
 
 		struct EitInfoSection * st_eitSection0 = json_parse(jObjSection0);
@@ -167,7 +154,7 @@ static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 	if ( *ptr->section1 != '\0' ) {
 		json_object * jObjSection1 = json_object_new_object();
 		
-		jObjSection1 = (ptr->to_inject == 1) ? json_tokener_parse(ptr->section1) : convert_eit_struct_to_json(eitInfoXml->section1);
+		jObjSection1 = (ptr->to_inject == 1) ? json_tokener_parse(ptr->section1) : convert_eit_struct_to_json(eit_info->section1);
 		Logs(LOG_INFO,__FILE__,__LINE__,"section 1 json object of %s is : \n%s", ptr->video, json_object_to_json_string(jObjSection1));
 
 		struct EitInfoSection * st_eitSection1 = json_parse(jObjSection1);
@@ -180,11 +167,6 @@ static int convertStringsToEitStruct(EitMysql * ptr,struct EitInfo * eit_info)
 		}
 		// clean the json object
 		json_object_put(jObjSection1);
-	}
-
-	if (ptr->to_inject == 0) {
-		free_eit_info_xml(eitInfoXml);
-		free_eit_xml(eitXml);
 	}
 
 	//dump_eit_info(eit_info);

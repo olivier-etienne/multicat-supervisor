@@ -53,6 +53,11 @@
 /*****************************************************************************
  * Prototypage
  *****************************************************************************/
+static json_object *convert_content_desc_xml_to_json(struct EitInfoSection section);
+static json_object *convert_component_desc_xml_to_json(struct EitInfoSection section);
+static json_object *convert_duration_to_json(int duration);
+static json_object *convert_parental_rating_xml_to_json(struct EitInfoSection section);
+static json_object *convert_short_desc_xml_to_json(struct EitInfoSection section);
 static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSection * eitStrInfo);
 static int json_parse_short_event_descriptor_items(json_object * jarray,struct EitInfoSection * eitStrInfo);
 static int json_parse_short_event_descriptor(json_object * jobj,struct EitInfoSection * eitStrInfo);
@@ -130,6 +135,136 @@ static int json_parse_parental_rating_descriptor(json_object * jobj,struct EitIn
 //  }
 //}
 
+static json_object *convert_content_desc_xml_to_json(struct EitInfoSection section) {
+    // create json content desc array
+    json_object *jContentDescArray = json_object_new_array();
+
+    if (0 != section.content_desc[0].level_1) {
+        // create content desc json object
+        json_object * jContentDesc = json_object_new_object();
+
+        // create sub item of content desc json object
+        json_object *jContentDescContentL1 = json_object_new_int(section.content_desc[0].level_1);
+        json_object *jContentDescContentL2 = json_object_new_int(section.content_desc[0].level_2);
+
+        // add sub item inside objet    
+        json_object_object_add(jContentDesc,"content_nibble_level_1", jContentDescContentL1);
+        json_object_object_add(jContentDesc,"content_nibble_level_2", jContentDescContentL2);
+
+        // add objet into array
+        json_object_array_add(jContentDescArray, jContentDesc);
+    }
+
+    return jContentDescArray;
+}
+
+static json_object *convert_component_desc_xml_to_json(struct EitInfoSection section) {
+    int i;
+
+    // create json component desc array
+    json_object *jComponentDescArray = json_object_new_array();
+
+    for (i = 0; i < COMPONENTDESC_SIZE; i++) {
+        if (0 != section.component_desc[i].set_component_tag) {
+            // create component desc json object
+            json_object * jComponentDesc = json_object_new_object();
+
+            // create sub item of component desc json object
+            json_object *jComponentDescStreamContent = json_object_new_int(section.component_desc[i].stream_content);
+            json_object *jComponentDescComponentType = json_object_new_int(section.component_desc[i].component_type);
+            json_object *jComponentDescComponentTag = json_object_new_int(section.component_desc[i].set_component_tag);
+            json_object *jComponentDescLanguage = json_object_new_string(section.component_desc[i].lang);
+            json_object *jComponentDescText = json_object_new_string(section.component_desc[i].text);
+
+            // add sub item inside objet    
+            json_object_object_add(jComponentDesc,"stream_content", jComponentDescStreamContent);
+            json_object_object_add(jComponentDesc,"component_type", jComponentDescComponentType);
+            json_object_object_add(jComponentDesc,"set_component_tag", jComponentDescComponentTag);
+            json_object_object_add(jComponentDesc,"lang", jComponentDescLanguage);
+            json_object_object_add(jComponentDesc,"text", jComponentDescText);
+
+            json_object_array_add(jComponentDescArray, jComponentDesc);
+        }
+    }
+
+    return jComponentDescArray;
+}
+
+static json_object *convert_duration_to_json(int duration) {
+    // create duration json object
+    json_object *jDuration = json_object_new_int(duration);
+
+    return jDuration;
+}
+
+json_object *convert_eit_struct_to_json(struct EitInfoSection section) {    
+
+    //create main json objet
+    json_object * jObj = json_object_new_object();
+
+    // duration
+    json_object *jDurationValue = convert_duration_to_json(section.duration);
+    json_object_object_add(jObj, "duration", jDurationValue);
+
+    // short desc
+    json_object *jShortDesc = convert_short_desc_xml_to_json(section);
+    json_object_object_add(jObj, "SHORT_EVENT_DESCRIPTOR", jShortDesc);
+
+    // parental rating desc
+    json_object * jParentalRatingDesc = convert_parental_rating_xml_to_json(section);
+    json_object_object_add(jObj, "PARENTAL_RATING_DESCRIPTOR", jParentalRatingDesc);
+
+    // content desc
+    json_object *jContentDescArray = convert_content_desc_xml_to_json(section);
+    json_object_object_add(jObj, "CONTENT_DESCRIPTOR", jContentDescArray);
+
+    // component desc
+    json_object *jComponentDescArray = convert_component_desc_xml_to_json(section);
+    json_object_object_add(jObj, "COMPONENT_DESCRIPTOR", jComponentDescArray);
+
+    return jObj;
+}
+
+static json_object *convert_parental_rating_xml_to_json(struct EitInfoSection section) {
+    // create parental rating desc json object
+    json_object *jParentalRatingDesc = json_object_new_object();
+
+    if (0 != section.parent_rating_desc.age) {
+
+        // create sub item of parental rating desc json object
+        json_object *jParentalRatingDescRating = json_object_new_int(section.parent_rating_desc.age);
+        json_object *jParentalRatingDescCountryCode = json_object_new_string(section.parent_rating_desc.country_code);
+
+        // add sub item inside objet
+        json_object_object_add(jParentalRatingDesc,"age", jParentalRatingDescRating);
+        json_object_object_add(jParentalRatingDesc,"country_code", jParentalRatingDescCountryCode);
+    }
+
+    return jParentalRatingDesc;
+}
+
+static json_object *convert_short_desc_xml_to_json(struct EitInfoSection section) {
+    // create short desc json object
+    json_object *jShortDesc = json_object_new_object();
+    
+    if (NULL != section.short_event_desc.event_lang &&
+        NULL != section.short_event_desc.event_name &&
+        NULL != section.short_event_desc.event_text) {
+
+        // create sub item of short desc json object
+        json_object *jShortDescEventLang = json_object_new_string(section.short_event_desc.event_lang);
+        json_object *jShortDescEventName = json_object_new_string(section.short_event_desc.event_name);
+        json_object *jShortDescEventText = json_object_new_string(section.short_event_desc.event_text);
+
+        // add sub item inside objet
+        json_object_object_add(jShortDesc,"event_lang", jShortDescEventLang);
+        json_object_object_add(jShortDesc,"event_name", jShortDescEventName);
+        json_object_object_add(jShortDesc,"event_text", jShortDescEventText);
+    }
+
+    return jShortDesc;
+}
+
 /**
  *  @brief 
  *  @param[in] 
@@ -159,7 +294,7 @@ static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSe
 		if ( strcmp(key,"stream_content") == 0 ) {
 			switch(type) {
 				case json_type_string :
-					sscanf(json_object_get_string(val),"%" SCNu8,&eitStrInfo->component_desc[i].stream_content);
+					sscanf(json_object_get_string(val),"%x",&eitStrInfo->component_desc[i].stream_content);
 					break;
 				case json_type_int :
 					eitStrInfo->component_desc[i].stream_content = json_object_get_int(val);
@@ -172,7 +307,7 @@ static int json_parse_component_descriptor(json_object * jarray,struct EitInfoSe
 		else if ( strcmp(key,"component_type") == 0 ) {
 			switch(type) {
 				case json_type_string :
-					sscanf(json_object_get_string(val),"%" SCNu8,&eitStrInfo->component_desc[i].component_type);
+					sscanf(json_object_get_string(val),"%x",&eitStrInfo->component_desc[i].component_type);
 					break;
 				case json_type_int :
 					eitStrInfo->component_desc[i].component_type = json_object_get_int(val);

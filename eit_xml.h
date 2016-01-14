@@ -23,70 +23,18 @@
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-#include <json.h>
 
-#define COMPONENT_DESC_SIZE  3
-
-typedef struct shortEventXml_t {
-    char *event_name;   
-    char *event_lang;   
-    char *event_text;
-} shortEventXml_t;
-
-typedef struct parentalRatingXml_t {
-    int rating;   
-    char *country_code;
-} parentalRatingXml_t;
-
-typedef struct componentDescXml_t {
-    char *stream_content;
-    char *component_type;
-    int component_tag;
-    char *language;
-    char *text;
-} componentDescXml_t;
-
-typedef struct contentDescXml_t {
-    int content_l1;   
-    int content_l2;
-} contentDescXml_t;
-
-typedef struct eitInfoSectionXml_t {
-    int event_id;
-    long starttime;
-    int duration;
-    shortEventXml_t *short_event_xml;
-    parentalRatingXml_t *parental_rating_xml;
-    contentDescXml_t *content_desc_xml;
-    componentDescXml_t *component_desc_xml[COMPONENT_DESC_SIZE];
-} eitInfoSectionXml_t;
-
-typedef struct eitInfoXml_t {
-    eitInfoSectionXml_t *section0;
-    eitInfoSectionXml_t *section1;
-} eitInfoXml_t;
+#include "eit.h"
 
 typedef struct eitXml_t {
     size_t size;
     char *content;
-    int programNumber; 
 } eitXml_t;
-
-typedef struct xmlConfig_t {
-    xmlXPathContextPtr ctxt;
-} xmlConfig_t;
-
 
 /*****************************************************************************
  * Prototypes
  *****************************************************************************/
 
-json_object *convert_eit_struct_to_json(eitInfoSectionXml_t *section);
-int convert_xml_to_eit_struct(eitXml_t *eitXml, eitInfoXml_t *eitInfoXml);
-int extract_eti_xml_from_ts(eitXml_t *eitXml, const char *tsFilePath);
-void free_eit_info_xml(eitInfoXml_t *eitInfoXml);
-void free_eit_xml(eitXml_t *eitXml);
-eitInfoXml_t *init_eit_info_xml();
-eitXml_t *init_eit_xml();
+int extract_eit_xml_to_eit_struct(struct EitInfo * eit_info, const char *tsFilePath);
 
 #endif // EIT_XML_H_INCLUDED

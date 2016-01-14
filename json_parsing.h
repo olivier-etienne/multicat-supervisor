@@ -25,6 +25,8 @@
 
 #include <json.h>
 
+#include "eit.h"
+
 /**
  *  @brief 
  *  @param[in] 
@@ -32,6 +34,7 @@
  *
  * Parsing the json object 
  */
+json_object *convert_eit_struct_to_json(struct EitInfoSection section);
 struct EitInfoSection* json_parse(json_object * jobj);
 
 #endif // JSON_PARSING_H_INCLUDED

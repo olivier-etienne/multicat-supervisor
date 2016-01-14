@@ -48,37 +48,36 @@
 
 struct TextAndDesc
 {
-    char text[TEXTANDDESC_TEXT_LENGTH+1];
-    char desc[TEXTANDDESC_DESC_LENGTH+1];
+	char text[TEXTANDDESC_TEXT_LENGTH+1];
+	char desc[TEXTANDDESC_DESC_LENGTH+1];
 };
 
 struct ShortEventDesc
 {
-    char event_name[SHORTEVENTDESC_NAME_LENGTH+1];
-    char event_text[SHORTEVENTDESC_TEXT_LENGTH+1];
-    char event_lang[SHORTEVENTDESC_LANG_LENGTH+1];
+	char event_name[SHORTEVENTDESC_NAME_LENGTH+1];
+	char event_text[SHORTEVENTDESC_TEXT_LENGTH+1];
+	char event_lang[SHORTEVENTDESC_LANG_LENGTH+1];
 };
 
 struct ExtEventDesc
 {
-    char text[EXTEVENTDESC_TEXT_LENGTH+1];
-    char lang[EXTEVENTDESC_LANG_LENGTH+1];
-    struct TextAndDesc items[EXTEVENTDESC_ITEM_SIZE];
+	char text[EXTEVENTDESC_TEXT_LENGTH+1];
+	char lang[EXTEVENTDESC_LANG_LENGTH+1];
+	struct TextAndDesc items[EXTEVENTDESC_ITEM_SIZE];
 };
-
 
 struct ComponentDesc
 {
 	uint8_t stream_content;
 	uint8_t component_type;
 	uint8_t set_component_tag;
-    char text[COMPONENTDESC_TEXT_LENGTH+1];
-    char lang[COMPONENTDESC_LANG_LENGTH+1];
+	char text[COMPONENTDESC_TEXT_LENGTH+1];
+	char lang[COMPONENTDESC_LANG_LENGTH+1];
 };
 
 struct ParentalRatingDesc
 {
-    char country_code[PARENTALRATINGDESC_COUNTRY_CODE_LENGTH+1];
+	char country_code[PARENTALRATINGDESC_COUNTRY_CODE_LENGTH+1];
 	uint8_t age;
 };
 
@@ -99,15 +98,15 @@ struct ShortSmoothingBufferDesc
 	int sbLeakRate;
 };
 
-
 struct EitInfoSection {
 	//char startTime[STARTTIME_LENGTH+1];
 	long starttime;
 	int duration;
-    struct ShortEventDesc short_event_desc;
-    struct ExtEventDesc ext_event_desc;
-    struct ComponentDesc component_desc[COMPONENTDESC_SIZE];
-    struct ParentalRatingDesc parent_rating_desc;
+	int event_id;
+	struct ShortEventDesc short_event_desc;
+	struct ExtEventDesc ext_event_desc;
+	struct ComponentDesc component_desc[COMPONENTDESC_SIZE];
+	struct ParentalRatingDesc parent_rating_desc;
 	struct ContentDesc content_desc[CONTENT_DESC_SIZE];
 	struct CAIdentifierDesc ca_identifier_desc;
 	struct ShortSmoothingBufferDesc short_smoothing_Buffer_desc;
@@ -117,13 +116,13 @@ struct EitInfo
 {
 	short initialized;
 	short updated;
+	int programNumber;
 	uint16_t tsid;
 	uint16_t sid;
 	uint16_t onid;
 	struct EitInfoSection section0;
 	struct EitInfoSection section1;
 };
-
 
 /*****************************************************************************
  * Prototypes

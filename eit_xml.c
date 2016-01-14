@@ -9,176 +9,275 @@
  * Prototypage
  *****************************************************************************/
 
-static void free_component_desc_xml(componentDescXml_t *component_desc_xml);
-static void free_info_section_xml(eitInfoSectionXml_t *section);
-static void free_parental_rating_xml(parentalRatingXml_t *parental_rating_xml);
-static void free_short_event_xml(shortEventXml_t *short_event_xml);
-static void free_xml_conf(xmlConfig_t *xmlConf);
-static int init_component_desc_xml(componentDescXml_t *component_desc_xml);
-static int init_info_section_xml(eitInfoSectionXml_t *section);
-static int init_parental_rating_xml(parentalRatingXml_t *parental_rating_xml);
-static int init_short_event_xml(shortEventXml_t *short_event_xml);
-static xmlConfig_t *init_xml_conf(char * xmlContent, size_t xmlSize);
-static void build_component_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
-static void build_content_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
-static int build_eit_section_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
-static void build_parental_rating_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
-static int build_program_number(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoXml_t *eitInfoXml);
-static int build_sections_event_id(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoXml_t *eitInfoXml);
-static void build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
-static int build_starttime_duration_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section);
-static json_object *convert_content_desc_xml_to_json(contentDescXml_t *content_desc_xml);
-static json_object *convert_component_desc_xml_to_json(eitInfoSectionXml_t *section);
-static json_object *convert_duration_to_json(int duration);
-static json_object *convert_parental_rating_xml_to_json(parentalRatingXml_t *parental_rating_xml);
-static json_object *convert_short_desc_xml_to_json(shortEventXml_t *short_event_xml);
-/*static json_object *convert_starttime_to_json(long starttime);*/
+static void build_component_desc_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb);
+static void build_content_desc_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb);
+static int build_eit_section_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb);
+static void build_parental_rating_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb);
+static int build_program_number(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info);
+static int build_sections_event_id(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info);
+static void build_short_event_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb);
+static int build_starttime_duration_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb);
+static int convert_xml_to_eit_struct(eitXml_t *eitXml, struct EitInfo * eit_info);
+static int extract_eti_xml_from_ts(eitXml_t *eitXml, const char *tsFilePath);
+static void free_eit_xml(eitXml_t *eitXml);
+static int get_section_event_id(struct EitInfo * eit_info, int sectionNb);
+static eitXml_t *init_eit_xml();
 
 
-static void build_component_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
-    char xPathQuery[512];
-    xmlXPathObjectPtr xpathRes;
-    int i;
-    int nbComponent;
-
-    for (i = 0; i < COMPONENT_DESC_SIZE; i++) {
-        section->component_desc_xml[i]->stream_content = NULL;
-        section->component_desc_xml[i]->component_type = NULL;
-        section->component_desc_xml[i]->component_tag = -1;
-        section->component_desc_xml[i]->language = NULL;
-        section->component_desc_xml[i]->text = NULL;
+xmlDocPtr get_xml_doc(eitXml_t *eitXml) {
+    xmlDocPtr doc;
+    doc = xmlParseMemory(eitXml->content, eitXml->size);
+    
+    if (doc == NULL ) {
+        Logs(LOG_ERROR,__FILE__,__LINE__,"Document not parsed successfully");
+        return NULL;
     }
 
-    // init context before new XPath query
-    xmlConf->ctxt = xmlXPathNewContext(xmlParseMemory(eitXml->content, eitXml->size));
+    return doc;
+}
+
+xmlXPathObjectPtr get_xml_node_set(xmlDocPtr doc, xmlChar *xpath){
+    
+    xmlXPathContextPtr context;
+    xmlXPathObjectPtr result;
+
+    context = xmlXPathNewContext(doc);
+    if (context == NULL) {
+        Logs(LOG_ERROR,__FILE__,__LINE__,"Error in xmlXPathNewContext");
+        return NULL;
+    }
+    result = xmlXPathEvalExpression(xpath, context);
+    xmlXPathFreeContext(context);
+    if (result == NULL) {
+        Logs(LOG_ERROR,__FILE__,__LINE__,"Error in xmlXPathEvalExpression");
+        return NULL;
+    }
+    if(xmlXPathNodeSetIsEmpty(result->nodesetval)){
+        xmlXPathFreeObject(result);
+        Logs(LOG_ERROR,__FILE__,__LINE__,"No result");
+        return NULL;
+    }
+    return result;
+}
+
+
+static void build_component_desc_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb) {
+    char xPathQuery[512];
+    xmlXPathObjectPtr xpathRes;
+    xmlChar *keyword;
+    struct ComponentDesc componentDesc[COMPONENTDESC_SIZE];
+    int i;
+    int nbComponent;
+    int sectionEventId;    
+
+    // init section component desc
+    for (i = 0; i < COMPONENTDESC_SIZE; i++) { 
+        componentDesc[i].stream_content = 0;            
+        componentDesc[i].component_type = 0;            
+        componentDesc[i].set_component_tag = 0;            
+        memset(componentDesc[i].lang,'\0',COMPONENTDESC_LANG_LENGTH+1);
+        memset(componentDesc[i].text,'\0',COMPONENTDESC_TEXT_LENGTH+1);      
+        if (0 == sectionNb) {
+            eit_info->section0.component_desc[i].stream_content = 0;            
+            eit_info->section0.component_desc[i].component_type = 0;            
+            eit_info->section0.component_desc[i].set_component_tag = 0;            
+            memset(eit_info->section0.component_desc[i].lang,'\0',COMPONENTDESC_LANG_LENGTH+1);
+            memset(eit_info->section0.component_desc[i].text,'\0',COMPONENTDESC_TEXT_LENGTH+1);
+        }
+        else {
+            eit_info->section1.component_desc[i].stream_content = 0;            
+            eit_info->section1.component_desc[i].component_type = 0;            
+            eit_info->section1.component_desc[i].set_component_tag = 0;            
+            memset(eit_info->section1.component_desc[i].lang,'\0',COMPONENTDESC_LANG_LENGTH+1);
+            memset(eit_info->section1.component_desc[i].text,'\0',COMPONENTDESC_TEXT_LENGTH+1);
+        }
+    }
+
+    // get corresponding section event id
+    sectionEventId = get_section_event_id(eit_info, sectionNb);
 
     // search lang, event_name and text
-    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]/DESC/COMPONENT_DESC", eitXml->programNumber, section->event_id);
-    xpathRes = xmlXPathEvalExpression(BAD_CAST xPathQuery, xmlConf->ctxt);
-    if (NULL != xpathRes  && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
-        nbComponent = (xpathRes->nodesetval->nodeNr < COMPONENT_DESC_SIZE) ? xpathRes->nodesetval->nodeNr : COMPONENT_DESC_SIZE;
+    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]/DESC/COMPONENT_DESC", eit_info->programNumber, sectionEventId);
+    xpathRes = get_xml_node_set(xmlDoc, (xmlChar*) xPathQuery);
+    if (xpathRes && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
+        
+        nbComponent = (xpathRes->nodesetval->nodeNr < COMPONENTDESC_SIZE) ? xpathRes->nodesetval->nodeNr : COMPONENTDESC_SIZE;
+        
         for (i = 0; i < nbComponent; i++) {
             xmlNodePtr node = xpathRes->nodesetval->nodeTab[i];
             xmlAttr* attribute = node->properties;
+            
             while(attribute && attribute->name && attribute->children) {
+                keyword = xmlNodeListGetString(node->doc, attribute->children, 1);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"stream_content"))
-                    section->component_desc_xml[i]->stream_content = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
+                    sscanf((char *)keyword,"%x",&componentDesc[i].stream_content);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"component_type"))
-                    section->component_desc_xml[i]->component_type = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
+                    sscanf((char *)keyword,"%x",&componentDesc[i].component_type);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"component_tag"))
-                    section->component_desc_xml[i]->component_tag = atoi((char *)xmlNodeListGetString(node->doc, attribute->children, 1));
+                    componentDesc[i].set_component_tag = atoi((char *)keyword);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"language"))
-                    section->component_desc_xml[i]->language = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
+                    strncpy(componentDesc[i].lang, (char *)keyword, COMPONENTDESC_LANG_LENGTH);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"text"))
-                    section->component_desc_xml[i]->text = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
+                    strncpy(componentDesc[i].text, (char *)keyword, COMPONENTDESC_TEXT_LENGTH);
+                xmlFree(keyword);
                 attribute = attribute->next;
             }
-            xmlFree(attribute);
-            xmlFree(node);
-        }
+
+            if (0 == sectionNb)
+                eit_info->section0.component_desc[i] = componentDesc[i];
+            else
+                eit_info->section1.component_desc[i] = componentDesc[i];
+        }        
+        xmlXPathFreeObject(xpathRes);
     }
-    xmlXPathFreeObject(xpathRes);
 }
 
-static void build_content_desc_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
+static void build_content_desc_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb) {
     char xPathQuery[512];
     xmlXPathObjectPtr xpathRes;
+    xmlChar *keyword;
+    struct ContentDesc contentDesc[CONTENT_DESC_SIZE];
+    int i;
+    int nbComponent;
+    int sectionEventId;
 
-    section->content_desc_xml->content_l1 = -1;
-    section->content_desc_xml->content_l2 = -1;
+    // init section content desc
+    for (i = 0; i < CONTENT_DESC_SIZE; i++) {
+        contentDesc[i].level_1 = 0;
+        contentDesc[i].level_2 = 0;
+        contentDesc[i].user = 0;
+        if (0 == sectionNb) {
+            eit_info->section0.content_desc[i].level_1 = 0;
+            eit_info->section0.content_desc[i].level_2 = 0;
+            eit_info->section0.content_desc[i].user = 0;
+        }
+        else {
+            eit_info->section1.content_desc[i].level_1 = 0;
+            eit_info->section1.content_desc[i].level_2 = 0;
+            eit_info->section1.content_desc[i].user = 0;
+        }
+    }   
 
-    // init context before new XPath query
-    xmlConf->ctxt = xmlXPathNewContext(xmlParseMemory(eitXml->content, eitXml->size));
+    // get corresponding section event id
+    sectionEventId = get_section_event_id(eit_info, sectionNb);
 
     // search lang, event_name and text
-    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]/DESC/CONTENT_DESC", eitXml->programNumber, section->event_id);
-    xpathRes = xmlXPathEvalExpression(BAD_CAST xPathQuery, xmlConf->ctxt);
-    if (NULL != xpathRes  && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
-        xmlNodePtr node = xpathRes->nodesetval->nodeTab[0];
-        xmlAttr* attribute = node->properties;
-        while(attribute && attribute->name && attribute->children) {
-            if (xmlStrEqual(attribute->name, (const xmlChar *)"content_l1"))
-                section->content_desc_xml->content_l1 = atoi((char *)xmlNodeListGetString(node->doc, attribute->children, 1));
-            if (xmlStrEqual(attribute->name, (const xmlChar *)"content_l2"))
-                section->content_desc_xml->content_l2 = atoi((char *)xmlNodeListGetString(node->doc, attribute->children, 1));
-            attribute = attribute->next;
-        }
-        xmlFree(attribute);
-        xmlFree(node);
+    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]/DESC/CONTENT_DESC", eit_info->programNumber, sectionEventId);
+    xpathRes = get_xml_node_set(xmlDoc, (xmlChar*) xPathQuery);
+    if (xpathRes && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
+
+        nbComponent = (xpathRes->nodesetval->nodeNr < COMPONENTDESC_SIZE) ? xpathRes->nodesetval->nodeNr : COMPONENTDESC_SIZE;       
+
+        for (i = 0; i < nbComponent; i++) {
+            xmlNodePtr node = xpathRes->nodesetval->nodeTab[i];
+            xmlAttr* attribute = node->properties;
+            
+            while(attribute && attribute->name && attribute->children) {
+                keyword = xmlNodeListGetString(node->doc, attribute->children, 1);
+                if (xmlStrEqual(attribute->name, (const xmlChar *)"content_l1"))
+                    contentDesc[i].level_1 = atoi((char *)keyword);
+                if (xmlStrEqual(attribute->name, (const xmlChar *)"content_l2"))
+                    contentDesc[i].level_2 = atoi((char *)keyword);
+                xmlFree(keyword);
+                attribute = attribute->next;
+            }
+
+            if (0 == sectionNb)
+                eit_info->section0.content_desc[i] = contentDesc[i];
+            else
+                eit_info->section1.content_desc[i] = contentDesc[i];
+
+        }     
+        xmlXPathFreeObject(xpathRes);
     }
-    xmlXPathFreeObject(xpathRes);
 }
 
-static int build_eit_section_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
-    build_short_event_xml(eitXml, xmlConf, section);
-    build_parental_rating_xml(eitXml, xmlConf, section);
-    build_content_desc_xml(eitXml, xmlConf, section);
-    build_component_desc_xml(eitXml, xmlConf, section);
-    if (0 != (build_starttime_duration_xml(eitXml, xmlConf, section)))
+static int build_eit_section_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb) {    
+    if (0 != (build_starttime_duration_xml(eitXml, xmlDoc, eit_info, sectionNb)))
         return -1;
+    build_short_event_xml(eitXml, xmlDoc, eit_info, sectionNb);
+    build_parental_rating_xml(eitXml, xmlDoc, eit_info, sectionNb);
+    build_content_desc_xml(eitXml, xmlDoc, eit_info, sectionNb);
+    build_component_desc_xml(eitXml, xmlDoc, eit_info, sectionNb);
 
     return 0;
 }
 
-static void build_parental_rating_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
+static void build_parental_rating_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb) {
     char xPathQuery[512];
     xmlXPathObjectPtr xpathRes;
+    xmlChar *keyword;
+    int sectionEventId;
+    struct ParentalRatingDesc parentRatingDesc;
 
-    section->parental_rating_xml->rating = -1;
-    section->parental_rating_xml->country_code = NULL;
+    parentRatingDesc.age = 0;
+    memset(parentRatingDesc.country_code,'\0',PARENTALRATINGDESC_COUNTRY_CODE_LENGTH+1);
+    if (0 == sectionNb) {
+        eit_info->section0.parent_rating_desc.age = 0;
+        memset(eit_info->section0.parent_rating_desc.country_code,'\0',PARENTALRATINGDESC_COUNTRY_CODE_LENGTH+1);
+    }
+    else {
+        eit_info->section1.parent_rating_desc.age = 0;
+        memset(eit_info->section1.parent_rating_desc.country_code,'\0',PARENTALRATINGDESC_COUNTRY_CODE_LENGTH+1);
+    }
 
-    // init context before new XPath query
-    xmlConf->ctxt = xmlXPathNewContext(xmlParseMemory(eitXml->content, eitXml->size));
+    // get corresponding section event id
+    sectionEventId = get_section_event_id(eit_info, sectionNb);
 
     // search lang, event_name and text
-    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]/DESC/PARENTAL_RATING_DESC", eitXml->programNumber, section->event_id);
-    xpathRes = xmlXPathEvalExpression(BAD_CAST xPathQuery, xmlConf->ctxt);
-    if (NULL != xpathRes  && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
+    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]/DESC/PARENTAL_RATING_DESC", eit_info->programNumber, sectionEventId);
+    xpathRes = get_xml_node_set(xmlDoc, (xmlChar*) xPathQuery);
+    if (xpathRes && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
         xmlNodePtr node = xpathRes->nodesetval->nodeTab[0];
-        xmlAttr* attribute = node->properties;
+        xmlAttr* attribute = node->properties;;
+
         while(attribute && attribute->name && attribute->children) {
+            keyword = xmlNodeListGetString(node->doc, attribute->children, 1);
             if (xmlStrEqual(attribute->name, (const xmlChar *)"rating"))
-                section->parental_rating_xml->rating = atoi((char *)xmlNodeListGetString(node->doc, attribute->children, 1));
+                parentRatingDesc.age = atoi((char *)keyword);
             if (xmlStrEqual(attribute->name, (const xmlChar *)"country_code"))
-                section->parental_rating_xml->country_code = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
+                strncpy(parentRatingDesc.country_code, (char *)keyword, PARENTALRATINGDESC_COUNTRY_CODE_LENGTH+1);
+            xmlFree(keyword);
             attribute = attribute->next;
         }
-        xmlFree(attribute);
-        xmlFree(node);
+
+        if (0 == sectionNb)
+            eit_info->section0.parent_rating_desc = parentRatingDesc;
+        else
+            eit_info->section1.parent_rating_desc = parentRatingDesc;
+
+        xmlXPathFreeObject(xpathRes);
     }
-    xmlXPathFreeObject(xpathRes);
 }
 
-static int build_program_number(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoXml_t *eitInfoXml) {
+static int build_program_number(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info) {
+    xmlChar *xpath = (xmlChar*) "/TS/PAT/PROGRAM";
     xmlXPathObjectPtr xpathRes;
+    xmlChar *keyword;
 
-    eitXml->programNumber = -1;
-
-    // init context before new XPath query
-    xmlConf->ctxt = xmlXPathNewContext(xmlParseMemory(eitXml->content, eitXml->size));
+    // init program number
+    eit_info->programNumber = 0;
 
     // search for program number
-    xpathRes = xmlXPathEvalExpression(BAD_CAST "/TS/PAT/PROGRAM", xmlConf->ctxt);
-    if (NULL != xpathRes && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
+    xpathRes = get_xml_node_set(xmlDoc, xpath);
+    if (xpathRes && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
         xmlNodePtr node = xpathRes->nodesetval->nodeTab[0];
         xmlAttr* attribute = node->properties;
         while(attribute && attribute->name && attribute->children) {
-            xmlChar* value = xmlNodeListGetString(node->doc, attribute->children, 1);
+            keyword = xmlNodeListGetString(node->doc, attribute->children, 1);
             if (xmlStrEqual(attribute->name, (const xmlChar *)"number"))
-                eitXml->programNumber = atoi((char *)value);
+                eit_info->programNumber = atoi((char *)keyword);
+            xmlFree(keyword);
             attribute = attribute->next;
-            xmlFree(value);
         }
-        xmlFree(attribute);
-        xmlFree(node);
+        xmlXPathFreeObject(xpathRes);
     }
     else {
         Logs(LOG_ERROR,__FILE__,__LINE__,"Program number not found");
         return -1;
-    }
-    xmlXPathFreeObject(xpathRes);
+    }    
 
-    if (-1 == eitXml->programNumber) {
+    if (0 == eit_info->programNumber) {
         Logs(LOG_ERROR,__FILE__,__LINE__,"Program number found but invalid");
         return -1;
     }
@@ -186,46 +285,43 @@ static int build_program_number(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoX
     return 0;
 }
 
-static int build_sections_event_id(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoXml_t *eitInfoXml) {
+static int build_sections_event_id(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info) {   
     char xPathQuery[512];
     xmlXPathObjectPtr xpathRes;
+    xmlChar *keyword;
 
-    eitInfoXml->section0->event_id = -1;
-    eitInfoXml->section1->event_id = -1;
-
-    // init context before new XPath query
-    xmlConf->ctxt = xmlXPathNewContext(xmlParseMemory(eitXml->content, eitXml->size));
+    // init sections event id
+    eit_info->section0.event_id = 0;
+    eit_info->section1.event_id = 0;    
 
     // search section 0 event id
-    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]", eitXml->programNumber);
-    xpathRes = xmlXPathEvalExpression(BAD_CAST xPathQuery, xmlConf->ctxt);
-    if (NULL != xpathRes && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
+    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT", eit_info->programNumber);
+    xpathRes = get_xml_node_set(xmlDoc, (xmlChar*) xPathQuery);
+    if (xpathRes && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
         int i = 0;
         for (i=0; i < xpathRes->nodesetval->nodeNr; i++) {
-            xmlNodePtr childrenNode = xpathRes->nodesetval->nodeTab[i]->children;
-            xmlAttr* attribute = childrenNode->properties;
+            xmlNodePtr node = xpathRes->nodesetval->nodeTab[i];
+            xmlAttr* attribute = node->properties;
             while(attribute && attribute->name && attribute->children) {
-                xmlChar* value = xmlNodeListGetString(childrenNode->doc, attribute->children, 1);
+                keyword = xmlNodeListGetString(node->doc, attribute->children, 1);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"id")) {
-                    if (eitInfoXml->section0->event_id == -1 || atoi((char *)value) < eitInfoXml->section0->event_id)
-                        eitInfoXml->section0->event_id = atoi((char *)value);
-                    if (eitInfoXml->section1->event_id == -1 || atoi((char *)value) > eitInfoXml->section1->event_id)
-                        eitInfoXml->section1->event_id = atoi((char *)value);
+                    if (eit_info->section0.event_id == 0 || atoi((char *)keyword) < eit_info->section0.event_id)
+                        eit_info->section0.event_id = atoi((char *)keyword);
+                    if (eit_info->section1.event_id == 0 || (atoi((char *)keyword) <= (eit_info->section0.event_id + 1)))
+                        eit_info->section1.event_id = atoi((char *)keyword);
                 }
+                xmlFree(keyword);
                 attribute = attribute->next;
-                xmlFree(value);
             }
-            xmlFree(attribute);
-            xmlFree(childrenNode);
         }
+        xmlXPathFreeObject(xpathRes);
     }
     else {
         Logs(LOG_ERROR,__FILE__,__LINE__,"Program event id not found");
         return -1;
     }
-    xmlXPathFreeObject(xpathRes);
 
-    if (-1 == eitInfoXml->section0->event_id || -1 == eitInfoXml->section1->event_id) {
+    if (0 == eit_info->section0.event_id || 0 == eit_info->section1.event_id) {
         Logs(LOG_ERROR,__FILE__,__LINE__,"Program event id found but invalid");
         return -1;
     }
@@ -233,249 +329,153 @@ static int build_sections_event_id(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitIn
     return 0;
 }
 
-static void build_short_event_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
+static void build_short_event_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb) {
     char xPathQuery[512];
     xmlXPathObjectPtr xpathRes;
+    xmlChar *keyword;
+    int sectionEventId;
+    struct ShortEventDesc shortEventDesc;
 
-    section->short_event_xml->event_lang = NULL;
-    section->short_event_xml->event_name = NULL;
-    section->short_event_xml->event_text = NULL;
+    memset(shortEventDesc.event_lang,'\0',SHORTEVENTDESC_LANG_LENGTH+1);
+    memset(shortEventDesc.event_name,'\0',SHORTEVENTDESC_NAME_LENGTH+1);
+    memset(shortEventDesc.event_text,'\0',SHORTEVENTDESC_TEXT_LENGTH+1);
+    if (0 == sectionNb) {
+        memset(eit_info->section0.short_event_desc.event_lang,'\0',SHORTEVENTDESC_LANG_LENGTH+1);
+        memset(eit_info->section0.short_event_desc.event_name,'\0',SHORTEVENTDESC_NAME_LENGTH+1);
+        memset(eit_info->section0.short_event_desc.event_text,'\0',SHORTEVENTDESC_TEXT_LENGTH+1);
+    }
+    else {
+        memset(eit_info->section1.short_event_desc.event_lang,'\0',SHORTEVENTDESC_LANG_LENGTH+1);
+        memset(eit_info->section1.short_event_desc.event_name,'\0',SHORTEVENTDESC_NAME_LENGTH+1);
+        memset(eit_info->section1.short_event_desc.event_text,'\0',SHORTEVENTDESC_TEXT_LENGTH+1);
+    }
 
-    // init context before new XPath query
-    xmlConf->ctxt = xmlXPathNewContext(xmlParseMemory(eitXml->content, eitXml->size));
+    // get corresponding section event id
+    sectionEventId = get_section_event_id(eit_info, sectionNb);
 
-    // search lang, event_name and text
-    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]/DESC/SHORT_EVENT_DESC", eitXml->programNumber, section->event_id);
-    xpathRes = xmlXPathEvalExpression(BAD_CAST xPathQuery, xmlConf->ctxt);
-    if (NULL != xpathRes  && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
+    // search short desc
+    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]/DESC/SHORT_EVENT_DESC", eit_info->programNumber, sectionEventId);
+    xpathRes = get_xml_node_set(xmlDoc, (xmlChar*) xPathQuery);
+    if (xpathRes  && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
         xmlNodePtr node = xpathRes->nodesetval->nodeTab[0];
         xmlAttr* attribute = node->properties;
         while(attribute && attribute->name && attribute->children) {
+            keyword = xmlNodeListGetString(node->doc, attribute->children, 1);
             if (xmlStrEqual(attribute->name, (const xmlChar *)"lang"))
-                section->short_event_xml->event_lang = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
+                strncpy(shortEventDesc.event_lang, (char *)keyword, SHORTEVENTDESC_LANG_LENGTH+1);
             if (xmlStrEqual(attribute->name, (const xmlChar *)"event_name")) {
-                section->short_event_xml->event_name = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
-                utf8_to_latin9(section->short_event_xml->event_name);
+                strncpy(shortEventDesc.event_name, (char *)keyword, SHORTEVENTDESC_NAME_LENGTH+1);
+                utf8_to_latin9(shortEventDesc.event_name);
             }
             if (xmlStrEqual(attribute->name, (const xmlChar *)"text")) {
-                section->short_event_xml->event_text = (char *)xmlNodeListGetString(node->doc, attribute->children, 1);
-                utf8_to_latin9(section->short_event_xml->event_text);
+                strncpy(shortEventDesc.event_text, (char *)keyword, SHORTEVENTDESC_TEXT_LENGTH+1);
+                utf8_to_latin9(shortEventDesc.event_text);
             }
+            xmlFree(keyword);
             attribute = attribute->next;
         }
-        xmlFree(attribute);
-        xmlFree(node);
+
+        if (0 == sectionNb)
+            eit_info->section0.short_event_desc = shortEventDesc;
+        else
+            eit_info->section1.short_event_desc = shortEventDesc;
+
+        xmlXPathFreeObject(xpathRes);
     }
-    xmlXPathFreeObject(xpathRes);
 }
 
-static int build_starttime_duration_xml(eitXml_t *eitXml, xmlConfig_t *xmlConf, eitInfoSectionXml_t *section) {
+static int build_starttime_duration_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct EitInfo * eit_info, int sectionNb) {
     char xPathQuery[512];
     xmlXPathObjectPtr xpathRes;
+    xmlChar *keyword;
+    int sectionEventId;
+    long starttime;
+    int duration;
 
-    section->starttime = -1;
-    section->duration = -1;
+    // get corresponding section event id
+    sectionEventId = get_section_event_id(eit_info, sectionNb);
 
-    // init context before new XPath query
-    xmlConf->ctxt = xmlXPathNewContext(xmlParseMemory(eitXml->content, eitXml->size));
+    starttime = 0;
+    duration = 0;
+    if (0 == sectionNb) {
+        eit_info->section0.starttime = 0;
+        eit_info->section0.duration = 0;
+    }
+    else {
+        eit_info->section1.starttime = 0;
+        eit_info->section1.duration = 0;
+    }
 
     // search lang, event_name and text
-    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]", eitXml->programNumber, section->event_id);
-    xpathRes = xmlXPathEvalExpression(BAD_CAST xPathQuery, xmlConf->ctxt);
-    if (NULL != xpathRes  && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
+    sprintf(xPathQuery,"/TS/EIT[@service_id=\"%d\"]/EVENT[@id=\"%d\"]", eit_info->programNumber, sectionEventId);
+    xpathRes = get_xml_node_set(xmlDoc, (xmlChar*) xPathQuery);
+    if (xpathRes && xpathRes->type == XPATH_NODESET && xpathRes->nodesetval->nodeNr > 0) {
         xmlNodePtr node = xpathRes->nodesetval->nodeTab[0];
         xmlAttr* attribute = node->properties;
         while(attribute && attribute->name && attribute->children) {
+            keyword = xmlNodeListGetString(node->doc, attribute->children, 1);
             if (xmlStrEqual(attribute->name, (const xmlChar *)"start_time"))
-                section->starttime = atoi((char *)xmlNodeListGetString(node->doc, attribute->children, 1));
+                starttime = atoi((char *)keyword);
             if (xmlStrEqual(attribute->name, (const xmlChar *)"duration"))
-                section->duration = atoi((char *)xmlNodeListGetString(node->doc, attribute->children, 1));
+                duration = atoi((char *)keyword);
+            xmlFree(keyword);
             attribute = attribute->next;
         }
-        xmlFree(attribute);
-        xmlFree(node);
+        xmlXPathFreeObject(xpathRes);
     }
     else {
         Logs(LOG_ERROR,__FILE__,__LINE__,"Program start_time and duration not found");
         return -1;
     }
-    xmlXPathFreeObject(xpathRes);
 
-    if (-1 == section->starttime || -1 == section->duration) {
+    if (0 == starttime || 0 == duration) {
         Logs(LOG_ERROR,__FILE__,__LINE__,"Program start_time and duration found but invalid");
         return -1;
     }
 
+    if (0 == sectionNb) {
+        eit_info->section0.starttime = starttime;
+        eit_info->section0.duration = duration;
+    }
+    else {
+        eit_info->section1.starttime = starttime;
+        eit_info->section1.duration = duration;
+    }
+
     return 0;
 }
 
-static json_object *convert_content_desc_xml_to_json(contentDescXml_t *content_desc_xml) {
-    // create json content desc array
-    json_object *jContentDescArray = json_object_new_array();
+int convert_xml_to_eit_struct(eitXml_t *eitXml, struct EitInfo * eit_info) {
 
-    if (-1 != content_desc_xml->content_l1 && 
-        -1 != content_desc_xml->content_l2) {
-        // create content desc json object
-        json_object * jContentDesc = json_object_new_object();
+    // Create DOM tree and init XPath env    
+    xmlXPathInit();
 
-        // create sub item of content desc json object
-        json_object *jContentDescContentL1 = json_object_new_int(content_desc_xml->content_l1);
-        json_object *jContentDescContentL2 = json_object_new_int(content_desc_xml->content_l2);
-
-        // add sub item inside objet    
-        json_object_object_add(jContentDesc,"content_nibble_level_1", jContentDescContentL1);
-        json_object_object_add(jContentDesc,"content_nibble_level_2", jContentDescContentL2);
-
-        // add objet into array
-        json_object_array_add(jContentDescArray, jContentDesc);
-    }
-
-    return jContentDescArray;
-}
-
-static json_object *convert_component_desc_xml_to_json(eitInfoSectionXml_t *section) {
-    int i;
-
-    // create json component desc array
-    json_object *jComponentDescArray = json_object_new_array();
-
-    for (i = 0; i < COMPONENT_DESC_SIZE; i++) {
-        if (NULL != section->component_desc_xml[i]->stream_content) {
-            // create component desc json object
-            json_object * jComponentDesc = json_object_new_object();
-
-            // create sub item of component desc json object
-            json_object *jComponentDescStreamContent = json_object_new_string(section->component_desc_xml[i]->stream_content);
-            json_object *jComponentDescComponentType = json_object_new_string(section->component_desc_xml[i]->component_type);
-            json_object *jComponentDescComponentTag = json_object_new_int(section->component_desc_xml[i]->component_tag);
-            json_object *jComponentDescLanguage = json_object_new_string(section->component_desc_xml[i]->language);
-            json_object *jComponentDescText = json_object_new_string(section->component_desc_xml[i]->text);
-
-            // add sub item inside objet    
-            json_object_object_add(jComponentDesc,"stream_content", jComponentDescStreamContent);
-            json_object_object_add(jComponentDesc,"component_type", jComponentDescComponentType);
-            json_object_object_add(jComponentDesc,"set_component_tag", jComponentDescComponentTag);
-            json_object_object_add(jComponentDesc,"lang", jComponentDescLanguage);
-            json_object_object_add(jComponentDesc,"text", jComponentDescText);
-
-            json_object_array_add(jComponentDescArray, jComponentDesc);
-        }
-    }
-
-    return jComponentDescArray;
-}
-
-static json_object *convert_duration_to_json(int duration) {
-    // create duration json object
-    json_object *jDuration = json_object_new_int(duration);
-
-    return jDuration;
-}
-
-static json_object *convert_parental_rating_xml_to_json(parentalRatingXml_t *parental_rating_xml) {
-    // create parental rating desc json object
-    json_object *jParentalRatingDesc = json_object_new_object();
-
-    if (-1 != parental_rating_xml->rating && 
-        NULL != parental_rating_xml->country_code) {
-
-        // create sub item of parental rating desc json object
-        json_object *jParentalRatingDescRating = json_object_new_int(parental_rating_xml->rating);
-        json_object *jParentalRatingDescCountryCode = json_object_new_string(parental_rating_xml->country_code);
-
-        // add sub item inside objet
-        json_object_object_add(jParentalRatingDesc,"age", jParentalRatingDescRating);
-        json_object_object_add(jParentalRatingDesc,"country_code", jParentalRatingDescCountryCode);
-    }
-
-    return jParentalRatingDesc;
-}
-
-static json_object *convert_short_desc_xml_to_json(shortEventXml_t *short_event_xml) {
-    // create short desc json object
-    json_object *jShortDesc = json_object_new_object();
-    
-    if (NULL != short_event_xml->event_lang &&
-        NULL != short_event_xml->event_name &&
-        NULL != short_event_xml->event_text) {
-
-        // create sub item of short desc json object
-        json_object *jShortDescEventLang = json_object_new_string(short_event_xml->event_lang);
-        json_object *jShortDescEventName = json_object_new_string(short_event_xml->event_name);
-        json_object *jShortDescEventText = json_object_new_string(short_event_xml->event_text);
-
-        // add sub item inside objet
-        json_object_object_add(jShortDesc,"event_lang", jShortDescEventLang);
-        json_object_object_add(jShortDesc,"event_name", jShortDescEventName);
-        json_object_object_add(jShortDesc,"event_text", jShortDescEventText);
-    }
-
-    return jShortDesc;
-}
-
-/*static json_object *convert_starttime_to_json(long starttime) {
-    // create starttime json object
-    json_object *jStartTimeValue = json_object_new_int(starttime);
-
-    return jStartTimeValue;
-}*/
-
-json_object *convert_eit_struct_to_json(eitInfoSectionXml_t *section) {
-    //create main json objet
-    json_object * jObj = json_object_new_object();
-
-    // starttime  
-    //json_object *jStartTimeValue = convert_starttime_to_json(section->starttime);
-    //json_object_object_add(jObj, "starttime", jStartTimeValue);
-
-    // duration
-    json_object *jDurationValue = convert_duration_to_json(section->duration);
-    json_object_object_add(jObj, "duration", jDurationValue);
-    
-    // short desc
-    json_object *jShortDesc = convert_short_desc_xml_to_json(section->short_event_xml);
-    json_object_object_add(jObj, "SHORT_EVENT_DESCRIPTOR", jShortDesc);
-    
-    // parental rating desc
-    json_object * jParentalRatingDesc = convert_parental_rating_xml_to_json(section->parental_rating_xml);
-    json_object_object_add(jObj, "PARENTAL_RATING_DESCRIPTOR", jParentalRatingDesc);
-    
-    // content desc
-    json_object *jContentDescArray = convert_content_desc_xml_to_json(section->content_desc_xml);
-    json_object_object_add(jObj, "CONTENT_DESCRIPTOR", jContentDescArray);
-    
-    // component desc
-    json_object *jComponentDescArray = convert_component_desc_xml_to_json(section);
-    json_object_object_add(jObj, "COMPONENT_DESCRIPTOR", jComponentDescArray);
-    
-    return jObj;
-}
-
-int convert_xml_to_eit_struct(eitXml_t *eitXml, eitInfoXml_t *eitInfoXml) {
-    xmlConfig_t *xmlConf = NULL;
-
-    // Init XML Conf
-    if (NULL == (xmlConf = init_xml_conf(eitXml->content, eitXml->size)))
-        return -3;
+    xmlDocPtr xmlDoc;
+    xmlDoc = get_xml_doc(eitXml);
 
     // search program number
-    if (0 != (build_program_number(eitXml, xmlConf, eitInfoXml)))
+    if (0 != (build_program_number(eitXml, xmlDoc, eit_info)))
         return -3;
-    if (0 != (build_sections_event_id(eitXml, xmlConf, eitInfoXml)))
+
+    // search event id of section0 and section1
+    if (0 != (build_sections_event_id(eitXml, xmlDoc, eit_info)))
         return -3;
     
-    // build sections
-    if (0 != (build_eit_section_xml(eitXml, xmlConf, eitInfoXml->section0)))
+    // build section 0
+    if (0 != (build_eit_section_xml(eitXml, xmlDoc, eit_info, 0)))
         return -3;
-    if (0 != (build_eit_section_xml(eitXml, xmlConf, eitInfoXml->section1)))
-        return -3;  
-    
-    free_xml_conf(xmlConf);
+
+    // build section 1
+    if (0 != (build_eit_section_xml(eitXml, xmlDoc, eit_info, 1)))
+        return -3;
+
+    xmlFreeDoc(xmlDoc);
+    xmlCleanupParser();
 
     return 0;
 }
 
-int extract_eti_xml_from_ts(eitXml_t *eitXml, const char *tsFilePath) {
+static int extract_eti_xml_from_ts(eitXml_t *eitXml, const char *tsFilePath) {
     FILE *fd;
     char cmd[512];
 
@@ -505,144 +505,34 @@ int extract_eti_xml_from_ts(eitXml_t *eitXml, const char *tsFilePath) {
     return 0;
 }
 
-static void free_component_desc_xml(componentDescXml_t *component_desc_xml) {
-    if (NULL != component_desc_xml->stream_content) {
-        free(component_desc_xml->stream_content);
-    }
-    if (NULL != component_desc_xml->component_type) {
-        free(component_desc_xml->component_type);
-    }
-    if (NULL != component_desc_xml->language) {
-        free(component_desc_xml->language);
-    }
-    if (NULL != component_desc_xml->text) {
-        free(component_desc_xml->text);
-    }
-    free(component_desc_xml);
+int extract_eit_xml_to_eit_struct(struct EitInfo * eit_info, const char *tsFilePath) {
+    eitXml_t *eitXml = NULL; 
+
+    // Init EIT XML
+    if (NULL == (eitXml = init_eit_xml()))
+        return -3;
+
+    // load eit xml from ts file    
+    if (0 != extract_eti_xml_from_ts(eitXml, tsFilePath))
+        return -3;
+
+    // build eit from xml
+    if (0 != (convert_xml_to_eit_struct(eitXml, eit_info)))
+        return -3;
+
+    free_eit_xml(eitXml);
+
+    return 0;
 }
 
-void free_eit_info_xml(eitInfoXml_t *eitInfoXml) {
-    if (NULL != eitInfoXml->section0) {
-        free_info_section_xml(eitInfoXml->section0);
-    }
-    if (NULL != eitInfoXml->section1) {
-        free_info_section_xml(eitInfoXml->section1);
-    }
-    free(eitInfoXml);
-}
-
-void free_eit_xml(eitXml_t *eitXml) {
+static void free_eit_xml(eitXml_t *eitXml) {
     if (NULL != eitXml->content) {
         free(eitXml->content);
     }
     free(eitXml);
 }
 
-static void free_info_section_xml(eitInfoSectionXml_t *section) {
-    int i;
-
-    if (NULL != section->short_event_xml) {
-        free_short_event_xml(section->short_event_xml);
-    }
-    if (NULL != section->parental_rating_xml) {
-        free_parental_rating_xml(section->parental_rating_xml);
-    }    
-    for (i = 0 ; i < COMPONENT_DESC_SIZE; i++) {
-        if (NULL != section->component_desc_xml[i]) {
-            free_component_desc_xml(section->component_desc_xml[i]);
-        }
-    }
-
-    free(section);
-}
-
-static void free_parental_rating_xml(parentalRatingXml_t *parental_rating_xml) {
-    if (NULL != parental_rating_xml->country_code) {
-        free(parental_rating_xml->country_code);
-    }
-    free(parental_rating_xml);
-}
-
-static void free_short_event_xml(shortEventXml_t *short_event_xml) {
-    if (NULL != short_event_xml->event_lang) {
-        free(short_event_xml->event_lang);
-    }
-    if (NULL != short_event_xml->event_name) {
-        free(short_event_xml->event_name);
-    }
-    if (NULL != short_event_xml->event_text) {
-        free(short_event_xml->event_text);
-    }
-    free(short_event_xml);
-}
-
-static void free_xml_conf(xmlConfig_t *xmlConf) {
-    if (NULL != xmlConf->ctxt) {
-        xmlXPathFreeContext(xmlConf->ctxt);
-    }
-    free(xmlConf);
-}
-
-static int init_component_desc_xml(componentDescXml_t *component_desc_xml) {
-
-    if (NULL == (component_desc_xml->stream_content = malloc(sizeof(*component_desc_xml->stream_content)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(component_desc_xml->stream_content, 0, sizeof(*component_desc_xml->stream_content));
-
-    if (NULL == (component_desc_xml->component_type = malloc(sizeof(*component_desc_xml->component_type)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(component_desc_xml->component_type, 0, sizeof(*component_desc_xml->component_type));
-    
-    if (NULL == (component_desc_xml->language = malloc(sizeof(*component_desc_xml->language)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(component_desc_xml->language, 0, sizeof(*component_desc_xml->language));
-
-    if (NULL == (component_desc_xml->text = malloc(sizeof(*component_desc_xml->text)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(component_desc_xml->text, 0, sizeof(*component_desc_xml->text));
-
-    return 0;
-}
-
-eitInfoXml_t *init_eit_info_xml() {
-    eitInfoXml_t *eitInfoXml = NULL;
-
-    if (NULL == (eitInfoXml = malloc(sizeof(*eitInfoXml)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return NULL;
-    }
-    memset(eitInfoXml, 0, sizeof(*eitInfoXml));
-
-    if (NULL == (eitInfoXml->section0 = malloc(sizeof(*eitInfoXml->section0)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return NULL;
-    }
-    memset(eitInfoXml->section0, 0, sizeof(*eitInfoXml->section0));
-    
-    if (0 != (init_info_section_xml(eitInfoXml->section0)))
-        return NULL;
-
-    if (NULL == (eitInfoXml->section1 = malloc(sizeof(*eitInfoXml->section1)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return NULL;
-    }
-    memset(eitInfoXml->section1, 0, sizeof(*eitInfoXml->section1));
-
-    if (0 != (init_info_section_xml(eitInfoXml->section1)))
-        return NULL;
-
-    return eitInfoXml;
-}
-
-eitXml_t *init_eit_xml() {
+static eitXml_t *init_eit_xml() {
     eitXml_t *eitXml = NULL;
 
     if (NULL == (eitXml = malloc(sizeof(*eitXml)))) {
@@ -654,101 +544,6 @@ eitXml_t *init_eit_xml() {
     return eitXml;
 }
 
-static int init_info_section_xml(eitInfoSectionXml_t *section) {
-    int i;
-
-    if (NULL == (section->short_event_xml = malloc(sizeof(*section->short_event_xml)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(section->short_event_xml, 0, sizeof(*section->short_event_xml));
-
-    if (0 != init_short_event_xml(section->short_event_xml))
-        return -1;
-
-    if (NULL == (section->parental_rating_xml = malloc(sizeof(*section->parental_rating_xml)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(section->parental_rating_xml, 0, sizeof(*section->parental_rating_xml));
-
-    if (0 != init_parental_rating_xml(section->parental_rating_xml))
-        return -1;
-
-    if (NULL == (section->content_desc_xml = malloc(sizeof(*section->content_desc_xml)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(section->content_desc_xml, 0, sizeof(*section->content_desc_xml));
-
-    for (i = 0 ; i < COMPONENT_DESC_SIZE; i++) {
-        if (NULL == (section->component_desc_xml[i] = malloc(sizeof(*section->component_desc_xml[i])))) {
-            Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-            return -1;
-        }
-        memset(section->component_desc_xml[i], 0, sizeof(*section->component_desc_xml[i]));
-
-        if (0 != init_component_desc_xml(section->component_desc_xml[i]))
-            return -1;
-    }
-
-    return 0;
-}
-
-static int init_parental_rating_xml(parentalRatingXml_t *parental_rating_xml) {
-    
-    if (NULL == (parental_rating_xml->country_code = malloc(sizeof(*parental_rating_xml->country_code)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(parental_rating_xml->country_code, 0, sizeof(*parental_rating_xml->country_code));
-
-    return 0;
-}
-
-static int init_short_event_xml(shortEventXml_t *short_event_xml) {
-    
-    if (NULL == (short_event_xml->event_lang = malloc(sizeof(*short_event_xml->event_lang)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(short_event_xml->event_lang, 0, sizeof(*short_event_xml->event_lang));
-
-    if (NULL == (short_event_xml->event_name = malloc(sizeof(*short_event_xml->event_name)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(short_event_xml->event_name, 0, sizeof(*short_event_xml->event_name));
-
-    if (NULL == (short_event_xml->event_text = malloc(sizeof(*short_event_xml->event_text)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return -1;
-    }
-    memset(short_event_xml->event_text, 0, sizeof(*short_event_xml->event_text));
-
-    return 0;
-}
-
-static xmlConfig_t *init_xml_conf(char * xmlContent, size_t xmlSize) {
-    xmlConfig_t *xmlConf = NULL;
-
-    if (NULL == (xmlConf = malloc(sizeof(*xmlConf)))) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"out of memory");
-        return NULL;
-    }
-    memset(xmlConf, 0, sizeof(*xmlConf));
-    
-    // Create DOM tree and init XPath env
-    xmlKeepBlanksDefault(0);
-    xmlXPathInit();
-
-    // Create context for XPath query
-    xmlConf->ctxt = xmlXPathNewContext(xmlParseMemory(xmlContent, xmlSize));
-    if (NULL == xmlConf->ctxt) {
-        Logs(LOG_ERROR,__FILE__,__LINE__,"xml context creation failed");
-        free_xml_conf(xmlConf);
-        return NULL;
-    }
-
-    return xmlConf;
+static int get_section_event_id(struct EitInfo * eit_info, int sectionNb) {
+    return (0 == sectionNb) ? eit_info->section0.event_id : eit_info->section1.event_id;
 }
