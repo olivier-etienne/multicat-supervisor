@@ -2,6 +2,8 @@
 #include <stdbool.h>
 
 #include "logs.h"
+#include "stdint.h"
+#include "inttypes.h"
 #include "eit_xml.h"
 #include "util.h"
 
