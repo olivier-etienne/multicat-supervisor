@@ -1252,7 +1252,7 @@ uint8_t convertStrToInt(char * str)
 	if ( str == NULL ) return 0;
 
 	if ( strstr(str,"0x") != NULL ) {
-		sscanf(str,"%x",&ret);
+		ret = strtol(str, NULL, 0);
 	} else {
 		ret = atoi(str);
 	}
@@ -1265,7 +1265,7 @@ uint16_t convertStrToLong(char * str)
 
 	if ( str != NULL ) {
 		if ( strstr(str,"0x") != NULL ) {
-			sscanf(str,"%lx",&ret);
+			ret = strtol(str, NULL, 0);
 		} else {
 			ret = atol(str);
 		}		

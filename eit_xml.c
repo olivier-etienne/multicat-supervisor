@@ -112,9 +112,9 @@ static void build_component_desc_xml(eitXml_t *eitXml, xmlDocPtr xmlDoc, struct 
             while(attribute && attribute->name && attribute->children) {
                 keyword = xmlNodeListGetString(node->doc, attribute->children, 1);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"stream_content"))
-                    sscanf((char *)keyword,"%x",&componentDesc[i].stream_content);
+                    componentDesc[i].stream_content = convertStrToInt((char *)keyword);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"component_type"))
-                    sscanf((char *)keyword,"%x",&componentDesc[i].component_type);
+                    componentDesc[i].component_type = convertStrToInt((char *)keyword);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"component_tag"))
                     componentDesc[i].set_component_tag = atoi((char *)keyword);
                 if (xmlStrEqual(attribute->name, (const xmlChar *)"language"))
