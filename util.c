@@ -1314,6 +1314,7 @@ void load_eit(struct EitInfo *str_eit_info)
 			
 			strncpy(str_eit_info->section1.ext_event_desc.items[i].text,text,TEXTANDDESC_TEXT_LENGTH);
 			strncpy(str_eit_info->section1.ext_event_desc.items[i].desc,desc,TEXTANDDESC_DESC_LENGTH);
+			free(desc);
 			
 		} else {
 			break;
@@ -1343,7 +1344,11 @@ void load_eit(struct EitInfo *str_eit_info)
 			str_eit_info->section1.component_desc[i].set_component_tag = atoi(set_component_tag);
 			strncpy(str_eit_info->section1.component_desc[i].text,text,COMPONENTDESC_TEXT_LENGTH);
 			strncpy(str_eit_info->section1.component_desc[i].lang,lang,COMPONENTDESC_LANG_LENGTH);
-			
+			free(stream_content);
+			free(component_type);
+			free(set_component_tag);
+			free(text);
+			free(lang);
 		} else {
 			break;
 		}
@@ -1363,6 +1368,9 @@ void load_eit(struct EitInfo *str_eit_info)
 			str_eit_info->section1.content_desc[i].level_1 = convertStrToInt(level1);
 			str_eit_info->section1.content_desc[i].level_2 = convertStrToInt(level2);
 			str_eit_info->section1.content_desc[i].user = convertStrToInt(user);
+			free(level1);
+			free(level2);
+			free(user);
 		} else {
 			break;
 		}
@@ -1374,6 +1382,7 @@ void load_eit(struct EitInfo *str_eit_info)
 		
 		if ( *CA_system_id != '\0' ) {
 			str_eit_info->section0.ca_identifier_desc.CASystemId[i] = convertStrToInt(CA_system_id);
+			free(CA_system_id);
 		} else {
 			break;
 		}
