@@ -49,7 +49,7 @@ start() {
 	fi
 	
 	ulimit -c unlimited
-	$BASEDIR/bin/multicat-eit -l -P $PROVIDER -I $BASEDIR/conf/multicat.ini $VIDEOPATH/$VIDEO $ADDRESS:$PORT >> $BASEDIR/logs/multicat-eit.log 2>&1 &
+	$BASEDIR/bin/multicat-eit -l -P $PROVIDER -t $TTL -I $BASEDIR/conf/multicat.ini $VIDEOPATH/$VIDEO $ADDRESS:$PORT >> $BASEDIR/logs/multicat-eit.log 2>&1 &
 	if [ $? -ne 0 ]; then
 		echo "[ERROR] launch failure"
 		return 1
@@ -94,9 +94,9 @@ stop() {
 
 usage()
 {
-    echo "usage: ${SCRIPTNAME} <-p|--provider provider number> <-v|--video file> <-a|--address adr> <-P|--port number> [-h]] start|stop|restart|status"
+    echo "usage: ${SCRIPTNAME} <-p|--provider provider number> <-v|--video file> <-a|--address adr> <-P|--port number> <-t|--ttl ttl> [-h]] start|stop|restart|status"
 }
-OPTS=`getopt -o hp:v:a:P: --long provider:,video:,address:,port:,help -n '${SCRIPTNAME}' -- "$@"`
+OPTS=`getopt -o hp:v:a:P: --long provider:,video:,address:,port:,ttl:,help -n '${SCRIPTNAME}' -- "$@"`
  
 if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
  
@@ -107,13 +107,15 @@ PROVIDER=
 VIDEO=
 ADDRESS=
 PORT=
- 
+TTL=
+
 while true; do
 case "$1" in
 -p | --provider ) PROVIDER="$2"; shift; shift ;;
 -v | --video ) VIDEO="$2"; shift; shift ;;
 -a | --address ) ADDRESS="$2"; shift; shift ;;
 -P | --port ) PORT="$2"; shift; shift ;;
+-t | --ttl ) TTL="$2"; shift; shift ;;
 -h | --help ) usage; exit 0;;
 -- ) shift; break ;;
 * ) break ;;
@@ -126,7 +128,7 @@ if [ -z "$PROVIDER" ]; then
 fi
 
 if [ "$1" = "start" ]; then
-	if [ -z "$VIDEO" -o -z "$ADDRESS" -o -z "$PORT" ]; then
+	if [ -z "$VIDEO" -o -z "$ADDRESS" -o -z "$PORT" -o -z "$TTL" ]; then
 		usage
 		exit 1
 	fi

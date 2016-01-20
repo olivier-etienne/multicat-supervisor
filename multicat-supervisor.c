@@ -65,6 +65,7 @@ static char iniFile[512];
 //struct EitInfo str_eit_info;
 static EitMysql * streamingList = NULL;
 static int streamingListSize = 0;
+static int i_ttl = 0;
 static DataBaseInformations infos;
 static char * pathdir;
 
@@ -191,17 +192,17 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 		if ( ptr == NULL ) {
 			// DELETE STREAMING
 			eit_mysql_setStatus(streamingList[i].id,"STOPPING");
-			Logs(LOG_INFO,__FILE__,__LINE__,"DELETE STREAMING [%d,%d,%s,%s,%s,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+			Logs(LOG_INFO,__FILE__,__LINE__,"DELETE STREAMING [%d,%d,%s,%s,%s,%d,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port,i_ttl);
 			char cmd[512];
 			sprintf(cmd,"%s/../sh/multicat.sh --provider %d stop",pathdir,streamingList[i].id);
 			Logs(LOG_DEBUG,__FILE__,__LINE__,"cmd : %s",cmd);
 			int ret = system(cmd);
 			if ( ret != 0 ) {
 				eit_mysql_setStatus(streamingList[i].id,"STOP FAILURE");
-				Logs(LOG_ERROR,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d] FAILED",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+				Logs(LOG_ERROR,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d,%d] FAILED",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port,i_ttl);
 			}else {				
 				eit_mysql_setStatus(streamingList[i].id,"STOPPED");
-				Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d] DONE",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+				Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d,%d] DONE",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port,i_ttl);
 			}
 			action=1;
 		} else {
@@ -235,21 +236,21 @@ static void check_streaming_list_with_db(EitMysql * bdList,int bdListSize)
 		if ( ptr == NULL ) {
 			// NEW STREAMING
 			eit_mysql_setStatus(bdList[i].id,"STARTING");
-			Logs(LOG_INFO,__FILE__,__LINE__,"NEW STREAMING [%d,%d,%s,%s,%s,%d]",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port);
+			Logs(LOG_INFO,__FILE__,__LINE__,"NEW STREAMING [%d,%d,%s,%s,%s,%d,%d]",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port,i_ttl);
 			struct EitInfo eit_info;
 			switch (convertStringsToEitStruct(&bdList[i],&eit_info)) {
 				case 0:
 					sharedMemory_set(bdList[i].id,&eit_info);
 					if ( *bdList[i].video != '\0' && *bdList[i].address != '\0' ) {
 						char cmd[512];
-						sprintf(cmd,"%s/../sh/multicat.sh --provider %d --video %s --address %s --port %d start",pathdir,bdList[i].id,bdList[i].video,bdList[i].address,bdList[i].port);
+						sprintf(cmd,"%s/../sh/multicat.sh --provider %d --video %s --address %s --port %d --ttl %d start",pathdir,bdList[i].id,bdList[i].video,bdList[i].address,bdList[i].port,i_ttl);
 						Logs(LOG_DEBUG,__FILE__,__LINE__,"cmd : %s",cmd);
 						int ret = system(cmd);
 						if ( ret != 0 ) {
 							eit_mysql_setStatus(bdList[i].id,"START FAILURE");
-							Logs(LOG_ERROR,__FILE__,__LINE__,"START STREAMING [%d,%d,%s,%s,%s,%d] FAILED",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port);
+							Logs(LOG_ERROR,__FILE__,__LINE__,"START STREAMING [%d,%d,%s,%s,%s,%d,%d] FAILED",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port,i_ttl);
 						} else {
-							Logs(LOG_INFO,__FILE__,__LINE__,"START STREAMING [%d,%d,%s,%s,%s,%d] DONE",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port);
+							Logs(LOG_INFO,__FILE__,__LINE__,"START STREAMING [%d,%d,%s,%s,%s,%d,%d] DONE",bdList[i].id,bdList[i].lcn,bdList[i].description,bdList[i].video,bdList[i].address,bdList[i].port,i_ttl);
 							eit_mysql_setStatus(bdList[i].id,"STARTED");
 						}
 						action=1;
@@ -320,17 +321,17 @@ static void stop_all_streaming()
 	if ( streamingList == NULL ) return;
 	
 	for(i=0;i<streamingListSize;i++) {
-		Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+		Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d,%d]",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port,i_ttl);
 		char cmd[512];
 		sprintf(cmd,"%s/../sh/multicat.sh --provider %d stop",pathdir,streamingList[i].id);
 		Logs(LOG_DEBUG,__FILE__,__LINE__,"cmd : %s",cmd);
 		int ret = system(cmd);
 		if ( ret != 0 ) {
 			eit_mysql_setStatus(streamingList[i].id,"STOP FAILURE");		
-			Logs(LOG_ERROR,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d] FAILED",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+			Logs(LOG_ERROR,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d,%d] FAILED",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port,i_ttl);
 		} else {
 			eit_mysql_setStatus(streamingList[i].id,"STOPPED");
-			Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d] DONE",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port);
+			Logs(LOG_INFO,__FILE__,__LINE__,"STOP STREAMING [%d,%d,%s,%s,%s,%d,%d] DONE",streamingList[i].id,streamingList[i].lcn,streamingList[i].description,streamingList[i].video,streamingList[i].address,streamingList[i].port,i_ttl);
 		}
 	}
 	
@@ -395,6 +396,7 @@ int main( int i_argc, char **pp_argv )
 	infos.password = rechercherValeur("SUPERVISOR","password");
 	infos.database = rechercherValeur("SUPERVISOR","database");
 	infos.port = atoi(rechercherValeur("SUPERVISOR","port"));
+	i_ttl = atoi(rechercherValeur("NETWORK","ttl"));
 	
 	if ( sharedMemory_init(map_file,streamingProvider) != 0 ) {
 		Logs(LOG_CRITICAL,__FILE__,__LINE__,"Load shared memory mapping file failed" );
