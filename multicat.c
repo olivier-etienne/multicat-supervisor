@@ -916,8 +916,8 @@ int main( int i_argc, char **pp_argv )
 		exit(EXIT_FAILURE);	
 	}
 
-	logLevel = stringToLogLevel(rechercherValeur("SUPERVISOR_LOGS","level"));
-	strncpy(logfile,rechercherValeur("SUPERVISOR_LOGS","file"),128);
+	logLevel = stringToLogLevel(rechercherValeur("MULTICAT_LOGS","level"));
+	strncpy(logfile,rechercherValeur("MULTICAT_LOGS","file"),128);
 		
 	setLogFile(logLevel,logfile);
 
