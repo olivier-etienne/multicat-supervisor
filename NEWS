@@ -1,6 +1,14 @@
-$Id: NEWS 36 2011-11-17 21:04:25Z massiot $
+Orange Multicat-supervisor 1.1 :
+----------------------------
+  * Support of TTL configuration (from multicat.ini file)
 
-Changes between 1.0 and 2.0:
+
+Orange Multicat-supervisor 1.0 :
+----------------------------
+  * Support of EIT injection (extract from ts file or database)
+
+
+Original VideoLan Multicat 2.0:
 ----------------------------
   * Support for directory input/output, where the stream is stored into
     "chunks" of fixed duration, accompanied with their auxiliary file

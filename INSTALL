@@ -1,25 +1,49 @@
-$Id: INSTALL 41 2012-01-04 21:36:03Z massiot $
-
-Getting multicat
+Getting Orange multicat-supervisor
 ================
 
-Offically released multicat versions can be downloaded at:
-ftp://ftp.videolan.org/pub/videolan/multicat/
+Orange released multicat-supervisor versions can be downloaded at:
+https://github.com/orange-tv-blagnac/multicat-supervisor
 
-Multicat is developed using svn. To get the latest version checkout
-the repository at: svn://svn.videolan.org/multicat/trunk
+Multicat-supervisor is developed using git. To get the latest version, clone
+the repository at: git://github.com/orange-tv-blagnac/multicat-supervisor.git
 
-Installing multicat
+
+Basic configurations
+====================
+
+Multicat-supervisor tool configuration shall be done from multicat.ini file.
+
+[SUPERVISOR] block stands for StreamManager database configuration.
+[NETWORK] block stands for network TTL configuration.
+
+For advanced configuration, refer to admin documentation.
+https://github.com/orange-tv-blagnac/newtv-ip-streamer
+
+
+Installing Orange multicat-supervisor
 ===================
 
 Compile the program with `make` and install with `make install`.
 
-Multicat 2.X uses the biTStream package at build-time. No runtime library is
-needed.
+Refer to admin documentation for libraries installation
+https://github.com/orange-tv-blagnac/newtv-ip-streamer
 
-To install biTStream, clone git repository and run `make install`.
 
-    git clone git://git.videolan.org/bitstream.git
-    cd bitstream
-    make install
+Basic uses
+==========
 
+Only one instance by OS shall be launched.
+
+Starting multicat-supervisor
+
+/usr/local/multicat-tools/sh/multicat-supervisor start
+
+Stoping multicat-supervisor
+
+/usr/local/multicat-tools/sh/multicat-supervisor stop
+
+Multicat-supervisor tool shall be use with StreamManager tool (HMI).
+https://github.com/orange-tv-blagnac/stream-manager
+
+Refer to StreamManager user and admin documentation
+https://github.com/orange-tv-blagnac/newtv-ip-streamer
